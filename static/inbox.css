@@ -1,0 +1,181 @@
+/* Pilah inbox, on top of app.css (framed-sheet).
+   Grid at 1440: sheet 1440 - 228 sidebar - 8 inset = 1204, minus 2 border and 2 x 24 padding = 1154.
+   Columns 384 + 24 + 410 + 24 + 312 = 1154. */
+
+body { margin: 0; background: var(--ground); color: var(--text); font: var(--fs-body) / 20px var(--font); }
+.mono { font-family: var(--mono); }  /* taste-skill-ignore: message IDs only */
+
+/* ---------- the L-frame: sidebar and top bar on one tinted ground, no rule between them ---------- */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: var(--topbar-height) minmax(0, 1fr);
+  height: 100svh;
+}
+.sidebar { grid-row: 1 / -1; position: static; height: auto; padding: 12px 12px 16px; }
+.brand { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px; font-size: 16px; font-weight: 600; }
+.brand svg, .brand-short svg { color: var(--accent); }
+.brand svg { width: 20px; height: 20px; flex: none; }
+.scope { display: grid; gap: 2px; margin: 8px 0 16px; padding: 8px; border-radius: 8px; }
+.scope:hover { background: var(--raised); }
+.scope strong { font-weight: 500; }
+.scope span { color: var(--muted); font-size: var(--fs-small); }
+.nav-item .count { margin-left: auto; color: var(--text); font-variant-numeric: tabular-nums; }
+.sidebar .facts { padding: 0 8px; }
+
+.topbar { grid-column: 2; display: flex; align-items: center; justify-content: center; padding-right: var(--sheet-inset); }
+.search { position: relative; width: min(548px, 100%); }
+.search input {
+  width: 100%; height: 32px; padding: 0 40px 0 34px;
+  border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface); color: var(--text);
+  font: inherit;
+}
+.search input::placeholder { color: var(--faint); }
+.search svg { position: absolute; left: 11px; top: 9px; width: 14px; height: 14px; color: var(--muted); }
+.search kbd {
+  position: absolute; right: 8px; top: 6px; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 4px; background: var(--raised); color: var(--muted); font: var(--fs-small) / 20px var(--font); text-align: center;
+}
+
+/* ---------- the white sheet: inset 8px from the window's right and bottom, 1px edge, flat ---------- */
+.sheet {
+  grid-column: 2; min-height: 0; display: flex; flex-direction: column;
+  margin: 0 var(--sheet-inset) var(--sheet-inset) 0; padding: var(--pad);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sheet);
+}
+.title-row { margin-bottom: 20px; align-items: flex-start; }
+.title-row .sub { max-width: 96ch; }
+.title-actions { display: flex; align-items: center; gap: 12px; flex: none; }
+
+.inbox { flex: 1; min-height: 0; display: grid; grid-template-columns: 384px minmax(0, 1fr) 312px; gap: var(--gap); }
+.right-stack { display: contents; }  /* the message and its details are columns 2 and 3 on desktop */
+.list-column, .open-column, .details-column { min-height: 0; overflow-y: auto; }
+
+/* ---------- the list ---------- */
+.list-column { display: flex; flex-direction: column; overflow: hidden; }
+.list-column .tabs { margin-bottom: 8px; flex: none; }
+.tabs button { position: relative; padding: 10px 0; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--text); font-weight: 600; }
+.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--text); }
+.tabs .count { margin-left: 6px; font-variant-numeric: tabular-nums; }
+.messages { flex: 1; overflow-y: auto; margin: 0; padding: 0 2px 2px; list-style: none; }
+.message-row {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; width: 100%;
+  min-height: 72px; padding: 14px 12px; border: 0; border-radius: var(--radius-control); background: none;
+  color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.messages li + li .message-row { border-top: 1px solid var(--rule); border-radius: 0; }
+.group-head { display: flex; justify-content: space-between; padding: 16px 12px 6px; color: var(--muted); font-size: var(--fs-small); font-weight: 500; }
+.group-head:first-child { padding-top: 4px; }
+.messages .group-head + li .message-row { border-top: 0; }
+.message-row:hover { outline: 1px solid var(--border); outline-offset: -1px; border-radius: var(--radius-control); }
+.message-row[aria-current="true"] { background: var(--active); border-radius: var(--radius-control); }
+.message-row[aria-current="true"]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; background: var(--accent); }
+.messages li:has(.message-row[aria-current="true"]) + li .message-row { border-top-color: transparent; }
+.message-row .sender { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.message-row.unread .sender { font-weight: 600; }
+.message-row .time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.message-row .preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.message-row .meta { display: flex; align-items: center; gap: 10px; justify-self: end; }
+.message-row .team { width: 104px; color: var(--muted); text-align: right; white-space: nowrap; }
+.pill { flex: none; height: 20px; padding: 0 8px; }
+
+/* the confidence gate, small: the model's top probability against the review threshold */
+.gate-mini { position: relative; width: 36px; height: 4px; border-radius: 2px; background: var(--rule); flex: none; }
+.gate-mini i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--accent); }
+.gate-mini b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--text); }
+.gate-mini.below i { background: var(--chart-muted); }
+
+/* ---------- the open message ---------- */
+.open-column { display: flex; flex-direction: column; gap: var(--gap); }
+#open-message { display: grid; gap: var(--gap); }
+.open-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.open-head h2 { font-size: var(--fs-section); line-height: 24px; font-weight: 600; }
+.open-head p { color: var(--muted); }
+.back { display: none; }
+.bubble { max-width: 56ch; padding: 14px 16px; border-radius: 4px 14px 14px 14px; background: var(--raised); font-size: 16px; line-height: 24px; }
+.verdict { max-width: 60ch; }
+.verdict strong { font-weight: 600; }
+.assign { display: grid; gap: 12px; }
+.assign h3, .composer h3, .well h3 { font-size: var(--fs-body); line-height: 20px; font-weight: 600; }
+.team-choice button { font: inherit; }
+.team-choice button[aria-pressed="true"] { font-weight: 500; }
+.assign-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.done-note { color: var(--positive); font-weight: 500; }
+.composer { display: grid; gap: 12px; padding-top: var(--gap); border-top: 1px solid var(--rule); }
+.composer textarea {
+  width: 100%; min-height: 72px; padding: 10px 12px; resize: vertical;
+  border: 1px solid var(--control); border-radius: var(--radius-control); font: inherit; color: var(--text); background: var(--surface);
+}
+.composer textarea::placeholder { color: var(--faint); }
+.composer .assign-row span { color: var(--muted); }
+
+/* ---------- why: the three answers in a tinted well ---------- */
+.well { display: grid; align-content: start; gap: 24px; padding: var(--card-pad); border-radius: var(--radius-card); background: var(--raised); }
+.answer { display: grid; gap: 10px; }
+.answer header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.answer header span { color: var(--muted); font-size: var(--fs-small); }
+.bars { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.bars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; }
+.bars .name { color: var(--muted); }
+.bars .value { font-variant-numeric: tabular-nums; text-align: right; }
+.bars .chosen .name, .bars .chosen .value { color: var(--text); font-weight: 600; }
+.track { position: relative; grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface); }
+.track i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--chart-muted); }
+.chosen .track i { background: var(--accent); }
+.track b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--text); }
+.answer .note { color: var(--muted); font-size: var(--fs-small); }
+.facts { display: grid; gap: 0; margin: 0; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }
+.facts div + div { border-top: 1px solid var(--border); }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- states ---------- */
+.skeleton { display: block; background: var(--raised); border-radius: 4px; }
+.message-row .skeleton { height: 14px; margin: 3px 0; }
+.error { display: grid; gap: 8px; padding: 16px; border: 1px dashed var(--control); border-radius: var(--radius-control); }
+.error p { margin: 0; }
+.list-empty { margin: 12px 2px; }
+
+/* ---------- tablet: the frame folds to a top bar, the details stack under the message ---------- */
+.menu-toggle, .brand-short, .menu-close { display: none; }
+.menu-close { margin-left: auto; }
+.brand-short { flex: none; align-items: center; gap: 8px; font-weight: 600; }
+.brand-short svg { width: 18px; height: 18px; flex: none; }
+@media (max-width: 1100px) {
+  .menu-toggle, .menu-close { display: inline-flex; }
+  .brand-short { display: flex; }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--topbar-height) minmax(0, 1fr); }
+  .sidebar { position: fixed; inset: 0; z-index: 20; height: 100%; width: 100%; background: var(--surface); transform: translateX(-100%); transition: transform var(--t-ui) var(--ease-out); }
+  .sidebar.open { transform: none; }
+  .topbar { grid-column: 1; justify-content: flex-start; gap: 12px; padding: 0 16px; }
+  .sheet { grid-column: 1; margin: 0; border-radius: 0; border-width: 1px 0 0; }
+  .inbox { grid-template-columns: 340px minmax(0, 1fr); }
+  .inbox > .right-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap); align-content: start; min-height: 0; overflow-y: auto; }
+  /* stacked, each region takes its content's height: with min-height 0 the rows shrank and the well covered the form */
+  .open-column, .details-column { overflow: visible; min-width: 0; min-height: auto; }
+  /* five teams no longer fit one row beside the list: outlined buttons in a 2-up grid, the odd last one full width */
+  .team-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; padding: 0; background: none; }
+  .team-choice button { height: 36px; border: 1px solid var(--control); border-radius: var(--radius-control); background: var(--surface); color: var(--text); }
+  .team-choice button[aria-pressed="true"] { background: var(--active); border-color: var(--text); }
+  .team-choice button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* ---------- phone: one region at a time; choosing a row pushes the message ---------- */
+@media (max-width: 640px) {
+  .sheet { padding: 16px; }
+  .title-row .sub { font-size: var(--fs-body); }
+  .title-actions .stamp { display: none; }
+  .search kbd { display: none; }
+  .inbox { grid-template-columns: minmax(0, 1fr); }
+  .inbox > .right-stack { display: none; }
+  .show-message .inbox > .list-column { display: none; }
+  .show-message .inbox > .right-stack { display: grid; }
+  .show-message .title-row { margin-bottom: 8px; }
+  .show-message .title-row .sub, .show-message .title-actions { display: none; }
+  .back { display: inline-flex; justify-self: start; margin: 0 0 4px -12px; }
+  .message-row { min-height: 72px; }
+  .message-row .team { width: auto; }
+  .team-choice button { height: 44px; }
+}

@@ -1,0 +1,356 @@
+{
+ "line": "WhatsApp pasien",
+ "shift": "Shift pagi",
+ "messages": [
+  {
+   "message_id": "i01",
+   "sender": "Sri Wahyuni",
+   "received_at": "07:03",
+   "language": "id",
+   "text": "Mau ganti jadwal kontrol bulan depan ke tanggal 20 bisa?"
+  },
+  {
+   "message_id": "e01",
+   "sender": "Daniel Hughes",
+   "received_at": "07:05",
+   "language": "en",
+   "text": "Can I move my follow-up appointment from Monday to Wednesday?"
+  },
+  {
+   "message_id": "i02",
+   "sender": "Budi Santoso",
+   "received_at": "07:09",
+   "language": "id",
+   "text": "Saya mau batalin janji dokter gigi besok jam 9, ada acara mendadak"
+  },
+  {
+   "message_id": "e02",
+   "sender": "Priya Nair",
+   "received_at": "07:10",
+   "language": "en",
+   "text": "I need to cancel tomorrow's 8am cardiology appointment"
+  },
+  {
+   "message_id": "i03",
+   "sender": "Dewi Lestari",
+   "received_at": "07:13",
+   "language": "id",
+   "text": "Kenapa tagihan saya dobel? Sudah bayar lewat QRIS tapi masih ditagih lagi. Kecewa banget"
+  },
+  {
+   "message_id": "e03",
+   "sender": "Mark Jensen",
+   "received_at": "07:18",
+   "language": "en",
+   "text": "I was charged twice for the same MRI. This is unacceptable."
+  },
+  {
+   "message_id": "i04",
+   "sender": "Agus Prasetyo",
+   "received_at": "07:20",
+   "language": "id",
+   "text": "Klaim asuransi untuk rawat inap minggu lalu prosesnya sampai mana ya?"
+  },
+  {
+   "message_id": "e04",
+   "sender": "Sophie Laurent",
+   "received_at": "07:23",
+   "language": "en",
+   "text": "Does my insurance cover the executive check-up package?"
+  },
+  {
+   "message_id": "i05",
+   "sender": "Rina Kartika",
+   "received_at": "07:24",
+   "language": "id",
+   "text": "Hasil cek darah kemarin sudah keluar belum?"
+  },
+  {
+   "message_id": "e05",
+   "sender": "Kenji Watanabe",
+   "received_at": "07:28",
+   "language": "en",
+   "text": "Are my cholesterol test results ready?"
+  },
+  {
+   "message_id": "i06",
+   "sender": "Hendra Wijaya",
+   "received_at": "07:30",
+   "language": "id",
+   "text": "Hasil MRI saya katanya 3 hari, sudah seminggu belum ada kabar. Gimana sih pelayanannya"
+  },
+  {
+   "message_id": "e06",
+   "sender": "Emma Clarke",
+   "received_at": "07:32",
+   "language": "en",
+   "text": "It's been 10 days and nobody has sent my biopsy results. Very frustrating."
+  },
+  {
+   "message_id": "i07",
+   "sender": "Yuni Astuti",
+   "received_at": "07:36",
+   "language": "id",
+   "text": "Obat darah tinggi saya habis hari ini, bisa resep ulang tanpa ketemu dokter?"
+  },
+  {
+   "message_id": "e07",
+   "sender": "Lucas Moreau",
+   "received_at": "07:37",
+   "language": "en",
+   "text": "I ran out of my epilepsy medication this morning, can I get a refill today?"
+  },
+  {
+   "message_id": "i08",
+   "sender": "Fajar Nugroho",
+   "received_at": "07:40",
+   "language": "id",
+   "text": "Boleh minum paracetamol bareng antibiotik yang dikasih dokter?"
+  },
+  {
+   "message_id": "e08",
+   "sender": "Aisha Rahman",
+   "received_at": "07:45",
+   "language": "en",
+   "text": "Is it fine to take vitamin D with my usual supplements?"
+  },
+  {
+   "message_id": "i09",
+   "sender": "Lina Marlina",
+   "received_at": "07:47",
+   "language": "id",
+   "text": "Bapak saya tiba-tiba nyeri dada dan keringat dingin, harus gimana??"
+  },
+  {
+   "message_id": "e09",
+   "sender": "Tom Fischer",
+   "received_at": "07:50",
+   "language": "en",
+   "text": "My husband collapsed and is not breathing properly"
+  },
+  {
+   "message_id": "i10",
+   "sender": "Rudi Hartono",
+   "received_at": "07:51",
+   "language": "id",
+   "text": "Anak saya kejang dan tidak sadar, tolong kirim ambulans sekarang"
+  },
+  {
+   "message_id": "e10",
+   "sender": "Hannah Lee",
+   "received_at": "07:55",
+   "language": "en",
+   "text": "Severe bleeding after a fall and it won't stop"
+  },
+  {
+   "message_id": "i11",
+   "sender": "Siti Aminah",
+   "received_at": "07:57",
+   "language": "id",
+   "text": "Ibu saya bicaranya pelo dan wajahnya mencong sebelah sejak 20 menit lalu"
+  },
+  {
+   "message_id": "e11",
+   "sender": "Oliver Grant",
+   "received_at": "07:59",
+   "language": "en",
+   "text": "My mother suddenly can't lift her right arm and her speech is slurred"
+  },
+  {
+   "message_id": "i12",
+   "sender": "Dimas Saputra",
+   "received_at": "08:03",
+   "language": "id",
+   "text": "Saya TIDAK butuh ambulans, cuma mau tanya jadwal dokter anak minggu depan"
+  },
+  {
+   "message_id": "e12",
+   "sender": "Mei Lin Tan",
+   "received_at": "08:04",
+   "language": "en",
+   "text": "No emergency, I just want to book a routine dental cleaning next month"
+  },
+  {
+   "message_id": "i13",
+   "sender": "Wulan Sari",
+   "received_at": "08:07",
+   "language": "id",
+   "text": "Bukan mau komplain, cuma mau tanya cara bayar pakai kartu kredit"
+  },
+  {
+   "message_id": "e13",
+   "sender": "James O'Connor",
+   "received_at": "08:12",
+   "language": "en",
+   "text": "I'm not complaining, just asking how to get an itemized invoice"
+  },
+  {
+   "message_id": "i14",
+   "sender": "Eko Purnomo",
+   "received_at": "08:14",
+   "language": "id",
+   "text": "Udah antri 3 jam di poli belum dipanggil juga, parah banget"
+  },
+  {
+   "message_id": "e14",
+   "sender": "Sara Lindqvist",
+   "received_at": "08:17",
+   "language": "en",
+   "text": "Your app keeps cancelling my bookings, third time this week!"
+  },
+  {
+   "message_id": "i15",
+   "sender": "Maya Anggraini",
+   "received_at": "08:18",
+   "language": "id",
+   "text": "Resep dari dokter kemarin kok obatnya beda merek sama yang dulu?"
+  },
+  {
+   "message_id": "e15",
+   "sender": "Ravi Menon",
+   "received_at": "08:22",
+   "language": "en",
+   "text": "Which pharmacy branch has my prescription ready for pickup?"
+  },
+  {
+   "message_id": "i16",
+   "sender": "Taufik Hidayat",
+   "received_at": "08:24",
+   "language": "id",
+   "text": "Suami saya sesak napas berat, bibirnya kebiruan"
+  },
+  {
+   "message_id": "e16",
+   "sender": "Claire Dubois",
+   "received_at": "08:26",
+   "language": "en",
+   "text": "My baby has a fever of 40 and is barely responding"
+  },
+  {
+   "message_id": "i17",
+   "sender": "Ratna Dewi",
+   "received_at": "08:30",
+   "language": "id",
+   "text": "Hasil rontgen thorax bisa dikirim lewat email?"
+  },
+  {
+   "message_id": "e17",
+   "sender": "Ben Carter",
+   "received_at": "08:31",
+   "language": "en",
+   "text": "Could you email me the PDF of my ultrasound report?"
+  },
+  {
+   "message_id": "i18",
+   "sender": "Yoga Pratama",
+   "received_at": "08:34",
+   "language": "id",
+   "text": "Saya sudah transfer DP persalinan tapi belum dapat konfirmasi"
+  },
+  {
+   "message_id": "e18",
+   "sender": "Nadia Petrova",
+   "received_at": "08:39",
+   "language": "en",
+   "text": "I paid the deposit for the delivery package but didn't get a receipt"
+  },
+  {
+   "message_id": "i19",
+   "sender": "Intan Permata",
+   "received_at": "08:41",
+   "language": "id",
+   "text": "Mau daftar vaksin influenza untuk 3 orang sekeluarga"
+  },
+  {
+   "message_id": "e19",
+   "sender": "Chris Walker",
+   "received_at": "08:44",
+   "language": "en",
+   "text": "I'd like to book flu shots for my two kids"
+  },
+  {
+   "message_id": "i20",
+   "sender": "Bambang Sutrisno",
+   "received_at": "08:45",
+   "language": "id",
+   "text": "Dosis insulin saya berapa unit ya kalau gula darah 250? Dokternya belum balas"
+  },
+  {
+   "message_id": "e20",
+   "sender": "Laura Rossi",
+   "received_at": "08:49",
+   "language": "en",
+   "text": "The new dose of metformin makes me nauseous, should I stop it?"
+  },
+  {
+   "message_id": "i21",
+   "sender": "Nur Aisyah",
+   "received_at": "08:51",
+   "language": "id",
+   "text": "Petugas kasirnya jutek banget, saya minta rincian tagihan malah dimarahi"
+  },
+  {
+   "message_id": "e21",
+   "sender": "Ahmed Karim",
+   "received_at": "08:53",
+   "language": "en",
+   "text": "The billing staff were rude and refused to explain the charges"
+  },
+  {
+   "message_id": "i22",
+   "sender": "Arif Rahman",
+   "received_at": "08:57",
+   "language": "id",
+   "text": "Hasil lab saya ada nilai yang ditandai tinggi, bisa dijelaskan dokter?"
+  },
+  {
+   "message_id": "e22",
+   "sender": "Julia Novak",
+   "received_at": "08:58",
+   "language": "en",
+   "text": "My lab report has a value flagged high, can a doctor explain it?"
+  },
+  {
+   "message_id": "i23",
+   "sender": "Fitri Handayani",
+   "received_at": "09:01",
+   "language": "id",
+   "text": "Anak saya barusan minum cairan pembersih lantai"
+  },
+  {
+   "message_id": "e23",
+   "sender": "Sam Taylor",
+   "received_at": "09:06",
+   "language": "en",
+   "text": "My son swallowed a button battery 10 minutes ago"
+  },
+  {
+   "message_id": "i24",
+   "sender": "Joko Susilo",
+   "received_at": "09:08",
+   "language": "id",
+   "text": "Tolong jangan dibatalkan janji saya ya, saya tetap datang besok"
+  },
+  {
+   "message_id": "e24",
+   "sender": "Elena Garcia",
+   "received_at": "09:11",
+   "language": "en",
+   "text": "Please do not cancel my appointment, I will still come tomorrow"
+  },
+  {
+   "message_id": "i25",
+   "sender": "Putri Ayu",
+   "received_at": "09:12",
+   "language": "id",
+   "text": "Pembayaran pakai BPJS ditolak terus padahal kartu aktif, capek bolak balik"
+  },
+  {
+   "message_id": "e25",
+   "sender": "David Kim",
+   "received_at": "09:16",
+   "language": "en",
+   "text": "My insurance claim was rejected again even though my policy is active"
+  }
+ ]
+}

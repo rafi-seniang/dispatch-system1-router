@@ -1,0 +1,50 @@
+{"message_id": "i01", "language": "id", "message": "Mau ganti jadwal kontrol bulan depan ke tanggal 20 bisa?", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "i02", "language": "id", "message": "Saya mau batalin janji dokter gigi besok jam 9, ada acara mendadak", "department": "appointment", "urgency": 1, "is_complaint": false}
+{"message_id": "i03", "language": "id", "message": "Kenapa tagihan saya dobel? Sudah bayar lewat QRIS tapi masih ditagih lagi. Kecewa banget", "department": "billing", "urgency": 1, "is_complaint": true}
+{"message_id": "i04", "language": "id", "message": "Klaim asuransi untuk rawat inap minggu lalu prosesnya sampai mana ya?", "department": "billing", "urgency": 0, "is_complaint": false}
+{"message_id": "i05", "language": "id", "message": "Hasil cek darah kemarin sudah keluar belum?", "department": "results", "urgency": 0, "is_complaint": false}
+{"message_id": "i06", "language": "id", "message": "Hasil MRI saya katanya 3 hari, sudah seminggu belum ada kabar. Gimana sih pelayanannya", "department": "results", "urgency": 1, "is_complaint": true}
+{"message_id": "i07", "language": "id", "message": "Obat darah tinggi saya habis hari ini, bisa resep ulang tanpa ketemu dokter?", "department": "medication", "urgency": 1, "is_complaint": false}
+{"message_id": "i08", "language": "id", "message": "Boleh minum paracetamol bareng antibiotik yang dikasih dokter?", "department": "medication", "urgency": 0, "is_complaint": false}
+{"message_id": "i09", "language": "id", "message": "Bapak saya tiba-tiba nyeri dada dan keringat dingin, harus gimana??", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "i10", "language": "id", "message": "Anak saya kejang dan tidak sadar, tolong kirim ambulans sekarang", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "i11", "language": "id", "message": "Ibu saya bicaranya pelo dan wajahnya mencong sebelah sejak 20 menit lalu", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "i12", "language": "id", "message": "Saya TIDAK butuh ambulans, cuma mau tanya jadwal dokter anak minggu depan", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "i13", "language": "id", "message": "Bukan mau komplain, cuma mau tanya cara bayar pakai kartu kredit", "department": "billing", "urgency": 0, "is_complaint": false}
+{"message_id": "i14", "language": "id", "message": "Udah antri 3 jam di poli belum dipanggil juga, parah banget", "department": "appointment", "urgency": 1, "is_complaint": true}
+{"message_id": "i15", "language": "id", "message": "Resep dari dokter kemarin kok obatnya beda merek sama yang dulu?", "department": "medication", "urgency": 0, "is_complaint": false}
+{"message_id": "i16", "language": "id", "message": "Suami saya sesak napas berat, bibirnya kebiruan", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "i17", "language": "id", "message": "Hasil rontgen thorax bisa dikirim lewat email?", "department": "results", "urgency": 0, "is_complaint": false}
+{"message_id": "i18", "language": "id", "message": "Saya sudah transfer DP persalinan tapi belum dapat konfirmasi", "department": "billing", "urgency": 0, "is_complaint": false}
+{"message_id": "i19", "language": "id", "message": "Mau daftar vaksin influenza untuk 3 orang sekeluarga", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "i20", "language": "id", "message": "Dosis insulin saya berapa unit ya kalau gula darah 250? Dokternya belum balas", "department": "medication", "urgency": 1, "is_complaint": false}
+{"message_id": "i21", "language": "id", "message": "Petugas kasirnya jutek banget, saya minta rincian tagihan malah dimarahi", "department": "billing", "urgency": 0, "is_complaint": true}
+{"message_id": "i22", "language": "id", "message": "Hasil lab saya ada nilai yang ditandai tinggi, bisa dijelaskan dokter?", "department": "results", "urgency": 0, "is_complaint": false}
+{"message_id": "i23", "language": "id", "message": "Anak saya barusan minum cairan pembersih lantai", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "i24", "language": "id", "message": "Tolong jangan dibatalkan janji saya ya, saya tetap datang besok", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "i25", "language": "id", "message": "Pembayaran pakai BPJS ditolak terus padahal kartu aktif, capek bolak balik", "department": "billing", "urgency": 1, "is_complaint": true}
+{"message_id": "e01", "language": "en", "message": "Can I move my follow-up appointment from Monday to Wednesday?", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "e02", "language": "en", "message": "I need to cancel tomorrow's 8am cardiology appointment", "department": "appointment", "urgency": 1, "is_complaint": false}
+{"message_id": "e03", "language": "en", "message": "I was charged twice for the same MRI. This is unacceptable.", "department": "billing", "urgency": 1, "is_complaint": true}
+{"message_id": "e04", "language": "en", "message": "Does my insurance cover the executive check-up package?", "department": "billing", "urgency": 0, "is_complaint": false}
+{"message_id": "e05", "language": "en", "message": "Are my cholesterol test results ready?", "department": "results", "urgency": 0, "is_complaint": false}
+{"message_id": "e06", "language": "en", "message": "It's been 10 days and nobody has sent my biopsy results. Very frustrating.", "department": "results", "urgency": 1, "is_complaint": true}
+{"message_id": "e07", "language": "en", "message": "I ran out of my epilepsy medication this morning, can I get a refill today?", "department": "medication", "urgency": 1, "is_complaint": false}
+{"message_id": "e08", "language": "en", "message": "Is it fine to take vitamin D with my usual supplements?", "department": "medication", "urgency": 0, "is_complaint": false}
+{"message_id": "e09", "language": "en", "message": "My husband collapsed and is not breathing properly", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "e10", "language": "en", "message": "Severe bleeding after a fall and it won't stop", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "e11", "language": "en", "message": "My mother suddenly can't lift her right arm and her speech is slurred", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "e12", "language": "en", "message": "No emergency, I just want to book a routine dental cleaning next month", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "e13", "language": "en", "message": "I'm not complaining, just asking how to get an itemized invoice", "department": "billing", "urgency": 0, "is_complaint": false}
+{"message_id": "e14", "language": "en", "message": "Your app keeps cancelling my bookings, third time this week!", "department": "appointment", "urgency": 1, "is_complaint": true}
+{"message_id": "e15", "language": "en", "message": "Which pharmacy branch has my prescription ready for pickup?", "department": "medication", "urgency": 0, "is_complaint": false}
+{"message_id": "e16", "language": "en", "message": "My baby has a fever of 40 and is barely responding", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "e17", "language": "en", "message": "Could you email me the PDF of my ultrasound report?", "department": "results", "urgency": 0, "is_complaint": false}
+{"message_id": "e18", "language": "en", "message": "I paid the deposit for the delivery package but didn't get a receipt", "department": "billing", "urgency": 0, "is_complaint": false}
+{"message_id": "e19", "language": "en", "message": "I'd like to book flu shots for my two kids", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "e20", "language": "en", "message": "The new dose of metformin makes me nauseous, should I stop it?", "department": "medication", "urgency": 1, "is_complaint": false}
+{"message_id": "e21", "language": "en", "message": "The billing staff were rude and refused to explain the charges", "department": "billing", "urgency": 0, "is_complaint": true}
+{"message_id": "e22", "language": "en", "message": "My lab report has a value flagged high, can a doctor explain it?", "department": "results", "urgency": 0, "is_complaint": false}
+{"message_id": "e23", "language": "en", "message": "My son swallowed a button battery 10 minutes ago", "department": "emergency", "urgency": 2, "is_complaint": false}
+{"message_id": "e24", "language": "en", "message": "Please do not cancel my appointment, I will still come tomorrow", "department": "appointment", "urgency": 0, "is_complaint": false}
+{"message_id": "e25", "language": "en", "message": "My insurance claim was rejected again even though my policy is active", "department": "billing", "urgency": 1, "is_complaint": true}

@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.taste-skill/
+CLAUDE.md
+AGENTS.md
+.claude/
+.agents/
