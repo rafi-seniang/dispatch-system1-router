@@ -1,0 +1,101 @@
+message_id,language,message,department,urgency,is_complaint,engine,predicted_department,department_probability,urgency_score,complaint_probability,action,milliseconds_per_message
+i01,id,Mau ganti jadwal kontrol bulan depan ke tanggal 20 bisa?,appointment,0,False,jev,appointment,1.0,0.2,0.05,auto_route,46.12956800003303
+i02,id,"Saya mau batalin janji dokter gigi besok jam 9, ada acara mendadak",appointment,1,False,jev,appointment,1.0,0.94,0.04,auto_route,46.12956800003303
+i03,id,Kenapa tagihan saya dobel? Sudah bayar lewat QRIS tapi masih ditagih lagi. Kecewa banget,billing,1,True,jev,billing,1.0,0.85,0.83,auto_route,46.12956800003303
+i04,id,Klaim asuransi untuk rawat inap minggu lalu prosesnya sampai mana ya?,billing,0,False,jev,billing,1.0,0.16,0.12,auto_route,46.12956800003303
+i05,id,Hasil cek darah kemarin sudah keluar belum?,results,0,False,jev,results,1.0,0.72,0.14,auto_route,46.12956800003303
+i06,id,"Hasil MRI saya katanya 3 hari, sudah seminggu belum ada kabar. Gimana sih pelayanannya",results,1,True,jev,results,1.0,0.59,0.96,auto_route,46.12956800003303
+i07,id,"Obat darah tinggi saya habis hari ini, bisa resep ulang tanpa ketemu dokter?",medication,1,False,jev,medication,1.0,1.12,0.08,auto_route,46.12956800003303
+i08,id,Boleh minum paracetamol bareng antibiotik yang dikasih dokter?,medication,0,False,jev,medication,1.0,0.31,0.03,auto_route,46.12956800003303
+i09,id,"Bapak saya tiba-tiba nyeri dada dan keringat dingin, harus gimana??",emergency,2,False,jev,emergency,1.0,2.0,0.02,escalate_now,46.12956800003303
+i10,id,"Anak saya kejang dan tidak sadar, tolong kirim ambulans sekarang",emergency,2,False,jev,emergency,1.0,2.0,0.04,escalate_now,46.12956800003303
+i11,id,Ibu saya bicaranya pelo dan wajahnya mencong sebelah sejak 20 menit lalu,emergency,2,False,jev,emergency,1.0,2.0,0.05,escalate_now,46.12956800003303
+i12,id,"Saya TIDAK butuh ambulans, cuma mau tanya jadwal dokter anak minggu depan",appointment,0,False,jev,appointment,1.0,0.1,0.08,auto_route,46.12956800003303
+i13,id,"Bukan mau komplain, cuma mau tanya cara bayar pakai kartu kredit",billing,0,False,jev,billing,1.0,0.15,0.07,auto_route,46.12956800003303
+i14,id,"Udah antri 3 jam di poli belum dipanggil juga, parah banget",appointment,1,True,jev,appointment,0.95,0.91,0.97,auto_route,46.12956800003303
+i15,id,Resep dari dokter kemarin kok obatnya beda merek sama yang dulu?,medication,0,False,jev,medication,1.0,0.5,0.35,auto_route,46.12956800003303
+i16,id,"Suami saya sesak napas berat, bibirnya kebiruan",emergency,2,False,jev,emergency,1.0,2.0,0.04,escalate_now,46.12956800003303
+i17,id,Hasil rontgen thorax bisa dikirim lewat email?,results,0,False,jev,results,1.0,0.2,0.07,auto_route,46.12956800003303
+i18,id,Saya sudah transfer DP persalinan tapi belum dapat konfirmasi,billing,0,False,jev,billing,1.0,0.95,0.51,auto_route,46.12956800003303
+i19,id,Mau daftar vaksin influenza untuk 3 orang sekeluarga,appointment,0,False,jev,appointment,1.0,0.12,0.03,auto_route,46.12956800003303
+i20,id,Dosis insulin saya berapa unit ya kalau gula darah 250? Dokternya belum balas,medication,1,False,jev,medication,0.99,1.44,0.27,auto_route,46.12956800003303
+i21,id,"Petugas kasirnya jutek banget, saya minta rincian tagihan malah dimarahi",billing,0,True,jev,billing,1.0,0.56,0.77,auto_route,46.12956800003303
+i22,id,"Hasil lab saya ada nilai yang ditandai tinggi, bisa dijelaskan dokter?",results,0,False,jev,results,1.0,0.68,0.06,auto_route,46.12956800003303
+i23,id,Anak saya barusan minum cairan pembersih lantai,emergency,2,False,jev,emergency,1.0,2.0,0.03,escalate_now,46.12956800003303
+i24,id,"Tolong jangan dibatalkan janji saya ya, saya tetap datang besok",appointment,0,False,jev,appointment,1.0,0.54,0.08,auto_route,46.12956800003303
+i25,id,"Pembayaran pakai BPJS ditolak terus padahal kartu aktif, capek bolak balik",billing,1,True,jev,billing,1.0,0.98,0.83,auto_route,46.12956800003303
+e01,en,Can I move my follow-up appointment from Monday to Wednesday?,appointment,0,False,jev,appointment,1.0,0.33,0.04,auto_route,46.12956800003303
+e02,en,I need to cancel tomorrow's 8am cardiology appointment,appointment,1,False,jev,appointment,1.0,0.98,0.05,auto_route,46.12956800003303
+e03,en,I was charged twice for the same MRI. This is unacceptable.,billing,1,True,jev,billing,1.0,0.63,0.97,auto_route,46.12956800003303
+e04,en,Does my insurance cover the executive check-up package?,billing,0,False,jev,billing,1.0,0.11,0.04,auto_route,46.12956800003303
+e05,en,Are my cholesterol test results ready?,results,0,False,jev,results,1.0,0.16,0.09,auto_route,46.12956800003303
+e06,en,It's been 10 days and nobody has sent my biopsy results. Very frustrating.,results,1,True,jev,results,1.0,0.82,0.95,auto_route,46.12956800003303
+e07,en,"I ran out of my epilepsy medication this morning, can I get a refill today?",medication,1,False,jev,medication,0.99,1.5,0.07,escalate_now,46.12956800003303
+e08,en,Is it fine to take vitamin D with my usual supplements?,medication,0,False,jev,medication,1.0,0.01,0.02,auto_route,46.12956800003303
+e09,en,My husband collapsed and is not breathing properly,emergency,2,False,jev,emergency,1.0,2.0,0.03,escalate_now,46.12956800003303
+e10,en,Severe bleeding after a fall and it won't stop,emergency,2,False,jev,emergency,1.0,2.0,0.05,escalate_now,46.12956800003303
+e11,en,My mother suddenly can't lift her right arm and her speech is slurred,emergency,2,False,jev,emergency,1.0,2.0,0.03,escalate_now,46.12956800003303
+e12,en,"No emergency, I just want to book a routine dental cleaning next month",appointment,0,False,jev,appointment,1.0,0.0,0.02,auto_route,46.12956800003303
+e13,en,"I'm not complaining, just asking how to get an itemized invoice",billing,0,False,jev,billing,1.0,0.06,0.1,auto_route,46.12956800003303
+e14,en,"Your app keeps cancelling my bookings, third time this week!",appointment,1,True,jev,appointment,1.0,0.97,0.61,auto_route,46.12956800003303
+e15,en,Which pharmacy branch has my prescription ready for pickup?,medication,0,False,jev,medication,1.0,0.51,0.06,auto_route,46.12956800003303
+e16,en,My baby has a fever of 40 and is barely responding,emergency,2,False,jev,emergency,1.0,2.0,0.05,escalate_now,46.12956800003303
+e17,en,Could you email me the PDF of my ultrasound report?,results,0,False,jev,results,1.0,0.15,0.04,auto_route,46.12956800003303
+e18,en,I paid the deposit for the delivery package but didn't get a receipt,billing,0,False,jev,billing,1.0,0.14,0.2,auto_route,46.12956800003303
+e19,en,I'd like to book flu shots for my two kids,appointment,0,False,jev,appointment,1.0,0.06,0.02,auto_route,46.12956800003303
+e20,en,"The new dose of metformin makes me nauseous, should I stop it?",medication,1,False,jev,medication,1.0,0.75,0.05,auto_route,46.12956800003303
+e21,en,The billing staff were rude and refused to explain the charges,billing,0,True,jev,billing,1.0,0.69,0.97,auto_route,46.12956800003303
+e22,en,"My lab report has a value flagged high, can a doctor explain it?",results,0,False,jev,results,1.0,0.59,0.08,auto_route,46.12956800003303
+e23,en,My son swallowed a button battery 10 minutes ago,emergency,2,False,jev,emergency,1.0,2.0,0.03,escalate_now,46.12956800003303
+e24,en,"Please do not cancel my appointment, I will still come tomorrow",appointment,0,False,jev,appointment,1.0,0.8,0.1,auto_route,46.12956800003303
+e25,en,My insurance claim was rejected again even though my policy is active,billing,1,True,jev,billing,1.0,0.51,0.22,auto_route,46.12956800003303
+i01,id,Mau ganti jadwal kontrol bulan depan ke tanggal 20 bisa?,appointment,0,False,laya,appointment,0.9929,1.3105,0.0014,auto_route,12.103139999962877
+i02,id,"Saya mau batalin janji dokter gigi besok jam 9, ada acara mendadak",appointment,1,False,laya,emergency,0.9852,1.8036,0.3529,escalate_now,12.103139999962877
+i03,id,Kenapa tagihan saya dobel? Sudah bayar lewat QRIS tapi masih ditagih lagi. Kecewa banget,billing,1,True,laya,billing,0.9996,1.0238,0.5804,auto_route,12.103139999962877
+i04,id,Klaim asuransi untuk rawat inap minggu lalu prosesnya sampai mana ya?,billing,0,False,laya,emergency,0.5998,1.4641,0.0028,escalate_now,12.103139999962877
+i05,id,Hasil cek darah kemarin sudah keluar belum?,results,0,False,laya,results,0.9827,1.4774,0.0034,auto_route,12.103139999962877
+i06,id,"Hasil MRI saya katanya 3 hari, sudah seminggu belum ada kabar. Gimana sih pelayanannya",results,1,True,laya,results,0.7621,1.3349,0.6822,auto_route,12.103139999962877
+i07,id,"Obat darah tinggi saya habis hari ini, bisa resep ulang tanpa ketemu dokter?",medication,1,False,laya,medication,0.7999,1.2832,0.0276,auto_route,12.103139999962877
+i08,id,Boleh minum paracetamol bareng antibiotik yang dikasih dokter?,medication,0,False,laya,medication,0.9958,1.2972,0.0061,auto_route,12.103139999962877
+i09,id,"Bapak saya tiba-tiba nyeri dada dan keringat dingin, harus gimana??",emergency,2,False,laya,emergency,0.8998,1.4647,0.1938,escalate_now,12.103139999962877
+i10,id,"Anak saya kejang dan tidak sadar, tolong kirim ambulans sekarang",emergency,2,False,laya,emergency,0.9964,1.4561,0.3364,escalate_now,12.103139999962877
+i11,id,Ibu saya bicaranya pelo dan wajahnya mencong sebelah sejak 20 menit lalu,emergency,2,False,laya,emergency,0.7886,1.2827,0.099,escalate_now,12.103139999962877
+i12,id,"Saya TIDAK butuh ambulans, cuma mau tanya jadwal dokter anak minggu depan",appointment,0,False,laya,appointment,0.9611,1.4434,0.0393,auto_route,12.103139999962877
+i13,id,"Bukan mau komplain, cuma mau tanya cara bayar pakai kartu kredit",billing,0,False,laya,billing,1.0,1.1361,0.014,auto_route,12.103139999962877
+i14,id,"Udah antri 3 jam di poli belum dipanggil juga, parah banget",appointment,1,True,laya,emergency,0.9473,1.0742,0.4717,escalate_now,12.103139999962877
+i15,id,Resep dari dokter kemarin kok obatnya beda merek sama yang dulu?,medication,0,False,laya,medication,0.9994,1.1603,0.026,auto_route,12.103139999962877
+i16,id,"Suami saya sesak napas berat, bibirnya kebiruan",emergency,2,False,laya,emergency,0.8655,1.5268,0.0318,escalate_now,12.103139999962877
+i17,id,Hasil rontgen thorax bisa dikirim lewat email?,results,0,False,laya,results,0.9979,1.5015,0.0007,escalate_now,12.103139999962877
+i18,id,Saya sudah transfer DP persalinan tapi belum dapat konfirmasi,billing,0,False,laya,billing,1.0,1.4089,0.0019,auto_route,12.103139999962877
+i19,id,Mau daftar vaksin influenza untuk 3 orang sekeluarga,appointment,0,False,laya,medication,0.3446,1.3934,0.0092,human_review,12.103139999962877
+i20,id,Dosis insulin saya berapa unit ya kalau gula darah 250? Dokternya belum balas,medication,1,False,laya,medication,0.9755,1.4618,0.0268,auto_route,12.103139999962877
+i21,id,"Petugas kasirnya jutek banget, saya minta rincian tagihan malah dimarahi",billing,0,True,laya,billing,0.9998,1.3866,0.7202,auto_route,12.103139999962877
+i22,id,"Hasil lab saya ada nilai yang ditandai tinggi, bisa dijelaskan dokter?",results,0,False,laya,results,1.0,1.6,0.0063,escalate_now,12.103139999962877
+i23,id,Anak saya barusan minum cairan pembersih lantai,emergency,2,False,laya,medication,0.7795,1.369,0.0096,auto_route,12.103139999962877
+i24,id,"Tolong jangan dibatalkan janji saya ya, saya tetap datang besok",appointment,0,False,laya,appointment,0.882,1.3471,0.0147,auto_route,12.103139999962877
+i25,id,"Pembayaran pakai BPJS ditolak terus padahal kartu aktif, capek bolak balik",billing,1,True,laya,billing,1.0,1.3306,0.8982,auto_route,12.103139999962877
+e01,en,Can I move my follow-up appointment from Monday to Wednesday?,appointment,0,False,laya,appointment,0.9332,0.9355,0.0029,auto_route,12.103139999962877
+e02,en,I need to cancel tomorrow's 8am cardiology appointment,appointment,1,False,laya,appointment,0.9521,1.4798,0.1173,auto_route,12.103139999962877
+e03,en,I was charged twice for the same MRI. This is unacceptable.,billing,1,True,laya,billing,0.7187,1.4674,0.8246,auto_route,12.103139999962877
+e04,en,Does my insurance cover the executive check-up package?,billing,0,False,laya,appointment,0.6812,1.2405,0.0002,human_review,12.103139999962877
+e05,en,Are my cholesterol test results ready?,results,0,False,laya,results,0.9165,0.7717,0.0455,auto_route,12.103139999962877
+e06,en,It's been 10 days and nobody has sent my biopsy results. Very frustrating.,results,1,True,laya,results,0.9705,1.3309,0.7253,auto_route,12.103139999962877
+e07,en,"I ran out of my epilepsy medication this morning, can I get a refill today?",medication,1,False,laya,medication,0.9264,1.2118,0.1895,auto_route,12.103139999962877
+e08,en,Is it fine to take vitamin D with my usual supplements?,medication,0,False,laya,medication,0.309,0.885,0.0001,human_review,12.103139999962877
+e09,en,My husband collapsed and is not breathing properly,emergency,2,False,laya,emergency,0.9315,1.6931,0.1065,escalate_now,12.103139999962877
+e10,en,Severe bleeding after a fall and it won't stop,emergency,2,False,laya,emergency,0.7841,1.6048,0.1705,escalate_now,12.103139999962877
+e11,en,My mother suddenly can't lift her right arm and her speech is slurred,emergency,2,False,laya,emergency,0.9024,1.6356,0.584,escalate_now,12.103139999962877
+e12,en,"No emergency, I just want to book a routine dental cleaning next month",appointment,0,False,laya,appointment,0.9484,0.6204,0.0371,auto_route,12.103139999962877
+e13,en,"I'm not complaining, just asking how to get an itemized invoice",billing,0,False,laya,billing,0.963,1.0525,0.1819,auto_route,12.103139999962877
+e14,en,"Your app keeps cancelling my bookings, third time this week!",appointment,1,True,laya,appointment,0.886,1.5144,0.7698,escalate_now,12.103139999962877
+e15,en,Which pharmacy branch has my prescription ready for pickup?,medication,0,False,laya,medication,0.8741,1.0114,0.0323,auto_route,12.103139999962877
+e16,en,My baby has a fever of 40 and is barely responding,emergency,2,False,laya,emergency,0.9201,1.6087,0.2788,escalate_now,12.103139999962877
+e17,en,Could you email me the PDF of my ultrasound report?,results,0,False,laya,results,0.8511,1.0249,0.0152,auto_route,12.103139999962877
+e18,en,I paid the deposit for the delivery package but didn't get a receipt,billing,0,False,laya,billing,0.8129,1.3047,0.215,auto_route,12.103139999962877
+e19,en,I'd like to book flu shots for my two kids,appointment,0,False,laya,appointment,0.9159,1.4389,0.0001,auto_route,12.103139999962877
+e20,en,"The new dose of metformin makes me nauseous, should I stop it?",medication,1,False,laya,medication,0.7837,1.4565,0.2862,auto_route,12.103139999962877
+e21,en,The billing staff were rude and refused to explain the charges,billing,0,True,laya,billing,0.9875,1.1656,0.7663,auto_route,12.103139999962877
+e22,en,"My lab report has a value flagged high, can a doctor explain it?",results,0,False,laya,results,0.8366,1.151,0.1883,auto_route,12.103139999962877
+e23,en,My son swallowed a button battery 10 minutes ago,emergency,2,False,laya,emergency,0.7923,1.2023,0.0178,escalate_now,12.103139999962877
+e24,en,"Please do not cancel my appointment, I will still come tomorrow",appointment,0,False,laya,appointment,0.9379,1.0644,0.0731,auto_route,12.103139999962877
+e25,en,My insurance claim was rejected again even though my policy is active,billing,1,True,laya,billing,0.4453,1.2974,0.6762,human_review,12.103139999962877

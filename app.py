@@ -1,4 +1,4 @@
-"""Dispatch: configurable System One router (Laya active, Jev coming soon) plus the hospital inbox preset.
+"""Dispatch: configurable System One router (local Laya or hosted Jev) plus the hospital inbox preset.
 
 Run: uvicorn app:app --port 8010
 """
@@ -6,9 +6,9 @@ Run: uvicorn app:app --port 8010
 import os
 import threading
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, TypeVar
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from engines import ENGINE_CLASSES, TriageEngine
+from engines import ENGINE_CLASSES, EngineUnavailable, JevEngine, TriageEngine
 from questions import (
     EngineOption,
     RoutingAction,
@@ -27,7 +27,8 @@ from questions import (
 )
 from settings import LAB_FOLDER, Settings, load_settings
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
+T = TypeVar("T")
 PatientMessage = Annotated[str, Field(min_length=1, max_length=2000)]
 
 
@@ -81,38 +82,47 @@ class EnginesResponse(BaseModel):
     engines: list[EngineOption]
 
 
-def available_engines() -> list[EngineOption]:
-    has_jev_key = bool(os.environ.get("JEV_API_KEY", "").strip())
+def available_engines(engines: dict[str, TriageEngine], jev_model: str) -> list[EngineOption]:
     return [
         EngineOption(
             id="laya",
             name="Laya",
             provider="Convai Innovations (Apache 2.0, local GPU)",
-            available=True,
-            status_label="Active",
+            available="laya" in engines,
+            status_label="Active" if "laya" in engines else "Not loaded",
             detail="ModernBERT-large for English and mmBERT-base for 100+ languages.",
         ),
         EngineOption(
             id="jev",
             name="Jev",
-            provider="TypeSafe AI (System One API)",
-            available=False,
-            status_label="Coming soon",
-            detail="JEV_API_KEY is set, client integration coming soon."
-            if has_jev_key
-            else "Coming soon. Add JEV_API_KEY in secrets.env when ready.",
+            provider="TypeSafe AI (hosted System One API)",
+            available="jev" in engines,
+            status_label="Active" if "jev" in engines else "Needs key",
+            detail=f"{jev_model} through api.typesafe.ai, about half a second a request."
+            if "jev" in engines
+            else "Add JEV_API_KEY to the secrets file to enable Jev.",
         ),
     ]
 
 
-def create_app(settings: Settings | None = None, engine: TriageEngine | None = None) -> FastAPI:
+def load_engines(settings: Settings) -> dict[str, TriageEngine]:
+    """The engine TRIAGE_ENGINE names, plus Jev whenever its key is set, so a request can pick either."""
+    primary = ENGINE_CLASSES[settings.triage_engine](settings)
+    engines = {primary.name: primary}
+    if "jev" not in engines and os.environ.get("JEV_API_KEY", "").strip():
+        engines["jev"] = JevEngine(settings)
+    return engines
+
+
+def create_app(settings: Settings | None = None, engines: dict[str, TriageEngine] | None = None) -> FastAPI:
     resolved_settings = settings or load_settings()
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         application.state.settings = resolved_settings
-        application.state.engine = engine or ENGINE_CLASSES[resolved_settings.triage_engine](resolved_settings)
-        application.state.engine_lock = threading.Lock()  # one model on one GPU: requests take turns
+        application.state.engines = engines or load_engines(resolved_settings)
+        application.state.engine = application.state.engines[resolved_settings.triage_engine]
+        application.state.gpu_lock = threading.Lock()  # one model on one GPU: requests take turns
         yield
 
     application = FastAPI(title="Dispatch: System One router", version=VERSION, lifespan=lifespan)
@@ -125,21 +135,26 @@ def create_app(settings: Settings | None = None, engine: TriageEngine | None = N
     application.mount("/static", StaticFiles(directory=LAB_FOLDER / "static"), name="static")
 
     @application.get("/v1/engines")
-    def list_engines() -> EnginesResponse:
-        return EnginesResponse(engines=available_engines())
+    def list_engines(request: Request) -> EnginesResponse:
+        return EnginesResponse(
+            engines=available_engines(request.app.state.engines, request.app.state.settings.jev_model)
+        )
 
     @application.post("/v1/sort")
     def sort_items(body: SortRequest, request: Request) -> SortResponse:
-        if body.engine == "jev":
-            raise HTTPException(
-                status_code=503,
-                detail="Jev is coming soon. Select Laya for now until JEV_API_KEY is configured.",
+        active_engine: TriageEngine | None = request.app.state.engines.get(body.engine)
+        if active_engine is None:
+            detail = (
+                "Jev needs JEV_API_KEY in the secrets file."
+                if body.engine == "jev"
+                else f"{body.engine} is not loaded. Set TRIAGE_ENGINE={body.engine} to serve it."
             )
-        active_engine: TriageEngine = request.app.state.engine
+            raise HTTPException(status_code=503, detail=detail)
         criteria = {option.label: option.description for option in body.choices}
         started = time.perf_counter()
-        with request.app.state.engine_lock:
-            decisions = active_engine.sort_batch(body.items, body.instructions, criteria)
+        decisions = run_engine(
+            request, active_engine, lambda: active_engine.sort_batch(body.items, body.instructions, criteria)
+        )
         elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
         sorted_items = [
             SortedItem(
@@ -198,13 +213,23 @@ def create_app(settings: Settings | None = None, engine: TriageEngine | None = N
     return application
 
 
+def run_engine(request: Request, engine: TriageEngine, call: Callable[[], T]) -> T:
+    """One engine call: GPU engines take turns, a hosted engine runs at once, and a hosted failure is a 503."""
+    try:
+        if not engine.on_gpu:
+            return call()
+        with request.app.state.gpu_lock:
+            return call()
+    except EngineUnavailable as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+
 def triage_messages(messages: list[str], request: Request) -> tuple[list[TriagedMessage], float]:
     """All messages in one engine call, with the action for each and the elapsed milliseconds."""
     engine: TriageEngine = request.app.state.engine
     settings: Settings = request.app.state.settings
     started = time.perf_counter()
-    with request.app.state.engine_lock:
-        decisions = engine.decide_batch(messages)
+    decisions = run_engine(request, engine, lambda: engine.decide_batch(messages))
     triaged = [
         TriagedMessage(
             action=routing_action(decision, settings.review_probability_threshold, settings.escalate_urgency_score),

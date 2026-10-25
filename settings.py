@@ -17,7 +17,13 @@ class Settings(BaseSettings):
     # Personal secrets file that holds HF_TOKEN (never printed)
     secrets_env_path: Path
     # Engine the triage app serves
-    triage_engine: Literal["laya", "llm", "embedding"] = "laya"
+    triage_engine: Literal["laya", "jev", "llm", "embedding"] = "laya"
+    # Jev, TypeSafe's hosted System One model. JEV_API_KEY comes from the secrets file
+    jev_base_url: str = "https://api.typesafe.ai"
+    jev_model: str = "jev-latest"
+    jev_timeout_seconds: float = 30
+    # Requests in flight at once when a batch goes to Jev (one text per request)
+    jev_max_concurrent_requests: int = 8
     # cuda or cpu
     device: str = "cuda"
     # Small instruct LLM read as a decision model through its next-token probabilities

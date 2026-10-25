@@ -1,7 +1,8 @@
-# Dispatch: System 1 decision router (`Laya` / `Jev` / LLM logprobs)
+# Dispatch: System 1 decision router (`Jev` / `Laya` / LLM logprobs)
 
-Tried 25 October 2026 on the RTX 5050. Three open ways to get typed decisions without generating text,
-compared on the same 50 labelled messages, plus a configurable System 1 router API (`POST /v1/sort`) and web app.
+Tried 25 October 2026 on the RTX 5050. Jev (hosted) and three open ways to get typed decisions without generating
+text, compared on the same 50 labelled messages, plus a configurable System 1 router API (`POST /v1/sort`) and web
+app where each request picks Jev or Laya.
 
 ## What a decision model is
 
@@ -29,10 +30,11 @@ probabilities are what make it useful: code can act on confident answers and sen
 | **djev** | Jev-compatible server that returns bit-identical probabilities for identical requests | open | Qwen3.5-9B LoRA on SGLang, one H100 |
 | **sys1bench** | benchmark harness for these models (calibration, wording sensitivity, negation, option count) | Apache 2.0 | found Jev better on choice and yes/no, both weak on scores, Laya weak on negation and many options |
 
-## The three engines in this folder
+## The engines in this folder
 
 | Engine | How | Size on GPU |
 |---|---|---|
+| `jev` | TypeSafe's API: `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer $JEV_API_KEY`, model `jev-latest` (answered as `jev-1.14.0`). One text per request, up to 8 requests in flight | none, hosted |
 | `laya` | `laya.Router`, English text to the ModernBERT checkpoint, other text to the mmBERT one | about 3 GB (the English and multilingual checkpoints) |
 | `llm` | Qwen3.5-2B (Apache 2.0). Each question becomes a lettered multiple-choice prompt, one forward pass, softmax over the letters A to E only | 3.5 GB in bf16 |
 | `embedding` | EmbeddingGemma 2, cosine similarity between the message and each option's description, softmax with temperature 0.02 | 1.2 GB (text only) |
@@ -42,19 +44,30 @@ probabilities are what make it useful: code can act on confident answers and sen
 Routing rule (`questions.routing_action`): escalate when the department is emergency or expected urgency is at
 least 1.5, send to a person when the department probability is below 0.7, otherwise route automatically.
 
-| | Laya EN | Laya ID | Qwen3.5-2B EN | Qwen3.5-2B ID | Embedding EN | Embedding ID |
-|---|---|---|---|---|---|---|
-| Department accuracy | 0.96 | 0.80 | **1.00** | **0.88** | 0.84 | 0.68 |
-| Complaint accuracy | **0.96** | **0.96** | **0.96** | 0.84 | 0.68 | 0.52 |
-| Urgency accuracy (rounded score) | 0.40 | 0.28 | 0.48 | 0.36 | 0.56 | 0.40 |
-| Emergencies escalated | 5 of 5 | 4 of 5 | **5 of 5** | **5 of 5** | 5 of 5 | 3 of 5 |
-| Routed automatically to the wrong team | 0 | 1 | **0** | **0** | 0 | 1 |
-| False alarms (non-emergency escalated, of 20) | 1 | 5 | 1 | 6 | 4 | 5 |
-| Milliseconds per message (3 questions) | 12 | | 286 | | 3 | |
+| | Jev EN | Jev ID | Laya EN | Laya ID | Qwen3.5-2B EN | Qwen3.5-2B ID | Embedding EN | Embedding ID |
+|---|---|---|---|---|---|---|---|---|
+| Department accuracy | **1.00** | **1.00** | 0.96 | 0.80 | **1.00** | 0.88 | 0.84 | 0.68 |
+| Complaint accuracy | **0.96** | **0.96** | **0.96** | **0.96** | **0.96** | 0.84 | 0.68 | 0.52 |
+| Urgency accuracy (rounded score) | **0.80** | **0.80** | 0.40 | 0.28 | 0.48 | 0.36 | 0.56 | 0.40 |
+| Emergencies escalated | **5 of 5** | **5 of 5** | 5 of 5 | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | 3 of 5 |
+| Routed automatically to the wrong team | **0** | **0** | 0 | 1 | 0 | 0 | 0 | 1 |
+| False alarms (non-emergency escalated, of 20) | 1 | **0** | 1 | 5 | 1 | 6 | 4 | 5 |
+| Milliseconds per message (3 questions) | 46 (8 in flight, about 500 one at a time) | | 12 | | 286 | | 3 | |
+
+Jev and Laya were run together on 25 October 2026 (`python eval_triage.py jev laya`, results in
+`results/triage_eval_jev_laya.csv`). The Qwen and embedding columns come from the earlier run
+(`results/triage_eval_laya_llm_embedding.csv`). The Qwen weights are no longer on this laptop.
 
 What this shows, with only 50 messages (one message is 4 points of accuracy per language):
 
-- **Qwen3.5-2B read as a decision model was the safest.** Every emergency escalated, nothing routed to the
+- **Jev is the best engine on every measure here.** Every department right in both languages, including all
+  four Indonesian messages Laya got wrong (the dentist cancellation, the 3-hour queue, the insurance claim, and
+  the child who drank floor cleaner, which Laya routed to medication at 0.78), every emergency escalated, and
+  the only usable urgency score (0.80 against 0.28 to 0.56 for the others). It sent nothing to a person because
+  it was confident and right on all 50. The costs: it is a paid hosted API (about 435 input tokens per message
+  for the three questions, $0.042 per million), the text leaves the building, and a single request takes about
+  half a second, so a batch needs parallel requests.
+- **Qwen3.5-2B read as a decision model was the safest open option.** Every emergency escalated, nothing routed to the
   wrong team, and every wrong department came with a probability under 0.7, so the confidence gate caught
   them. It is 25 times slower than Laya here, partly because the fast linear-attention kernels
   (`flash-linear-attention`, `causal-conv1d`) do not install on Windows and PyTorch fallbacks run instead.
@@ -77,10 +90,10 @@ thresholds fitted on part of them and measured on the rest, and for Laya its fin
 | File | What |
 |---|---|
 | `questions.py` | general `ChoiceOption` / `SortRequest` schemas plus the patient triage questions and `routing_action` |
-| `engines.py` | `LayaEngine`, `LetterProbabilityLLMEngine`, `EmbeddingSimilarityEngine` behind `sort_batch` and `decide_batch` |
+| `engines.py` | `JevEngine`, `LayaEngine`, `LetterProbabilityLLMEngine`, `EmbeddingSimilarityEngine` behind `sort_batch` and `decide_batch` |
 | `eval_triage.py` | runs engines on `data/messages.jsonl`, writes `results/triage_eval_*.csv` |
 | `laya_quickstart.py` | the smallest Laya call, prints the raw answer JSON |
-| `app.py` | FastAPI: `GET /v1/engines` (Laya active, Jev coming soon), `POST /v1/sort` (custom prompt and choices), `POST /v1/triage`, `POST /v1/triage/batch`, `/health`, `/meta`, `/docs` |
+| `app.py` | FastAPI: `GET /v1/engines` (Laya, and Jev when `JEV_API_KEY` is set), `POST /v1/sort` (custom prompt and choices, `engine` picks Jev or Laya per request), `POST /v1/triage`, `POST /v1/triage/batch`, `/health`, `/meta`, `/docs` |
 | `static/` | "Dispatch", the inbox screen: `index.html`, `inbox.js`, `inbox.css` on `app.css`, and `inbox.json` (the shift's 50 sample messages with invented senders and times) |
 | `Dockerfile`, `docker-compose.yml`, `requirements-app.txt` | the app on CPU in Docker |
 
@@ -89,9 +102,14 @@ thresholds fitted on part of them and measured on the rest, and for Laya its fin
 ```powershell
 copy .env.example .env                                   # once
 python laya_quickstart.py
-python eval_triage.py                                    # or: eval_triage.py laya llm
+python eval_triage.py jev laya                           # any of: jev laya llm embedding
 python -m uvicorn app:app --port 8010                    # TRIAGE_ENGINE in .env picks the engine
 ```
+
+`JEV_API_KEY` in the secrets file (read, never copied) turns Jev on next to the local engine, so `POST /v1/sort`
+can send `"engine": "jev"` or `"engine": "laya"`. Without the key, Jev is listed as "Needs key" and a Jev request
+gets a 503 that says so. A Jev error (bad key, rate limit, timeout) is a 503 that names Jev, never a quiet switch
+to Laya. `JEV_MODEL`, `JEV_TIMEOUT_SECONDS` and `JEV_MAX_CONCURRENT_REQUESTS` are settings.
 
 Open http://localhost:8010. The screen loads the shift's 50 messages, triages them in one call, and lists what
 needs a person: "Escalate now" first, then "Needs a person", each in arrival order. Opening a message shows the

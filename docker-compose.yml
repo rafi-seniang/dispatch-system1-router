@@ -10,7 +10,7 @@ services:
       DEVICE: cpu
       SECRETS_ENV_PATH: /run/secrets/secrets.env
     volumes:
-      # Read-only mount of the personal secrets file, for HF_TOKEN
+      # Read-only mount of the personal secrets file, for HF_TOKEN and JEV_API_KEY
       - ../../secrets/secrets.env:/run/secrets/secrets.env:ro
       # The laptop's Hugging Face cache, shared with the Lab venv and the other backends: each model downloads once
       - ${USERPROFILE}/.cache/huggingface:/home/triage/.cache/huggingface

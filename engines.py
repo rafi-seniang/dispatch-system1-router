@@ -1,12 +1,17 @@
-"""Three ways to answer the triage questions without generating text.
+"""Four ways to answer the triage questions without generating text.
 
+jev        TypeSafe's hosted System One model, through its API (POST /v1/systemone)
 laya       open System One decision model (ModernBERT or mmBERT encoder plus a decision head)
 llm        a small instruct LLM, reading the probability of each answer letter after one forward pass
 embedding  EmbeddingGemma 2, cosine similarity between the message and each option's description
 """
 
-from typing import Protocol
+import os
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Protocol
 
+import httpx
 import torch
 from sentence_transformers import SentenceTransformer
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -22,9 +27,22 @@ from questions import (
 )
 from settings import Settings, model_dtype
 
+# The triage questions in the System One wire format that Laya and Jev both take
+TRIAGE_QUESTIONS = {
+    "department": {"type": "choice", "instructions": DEPARTMENT_INSTRUCTIONS, "criteria": DEPARTMENTS},
+    "urgency": {"type": "score", "instructions": URGENCY_INSTRUCTIONS, "criteria": URGENCY_LEVELS},
+    "complaint": {"type": "noul", "instructions": COMPLAINT_INSTRUCTIONS},
+}
+
+
+class EngineUnavailable(RuntimeError):
+    """A hosted engine did not answer. The app turns this into a 503 that names it."""
+
 
 class TriageEngine(Protocol):
     name: str
+    # A local model on the one GPU serves one request at a time. A hosted API takes them in parallel
+    on_gpu: bool
 
     def decide_batch(self, messages: list[str]) -> list[TriageDecision]: ...
 
@@ -60,59 +78,105 @@ def decision_from_probabilities(
     )
 
 
+def decision_from_answers(answers: dict[str, Any]) -> TriageDecision:
+    """Laya's and Jev's answers to TRIAGE_QUESTIONS."""
+    department = answers["department"]
+    urgency = answers["urgency"]
+    return TriageDecision(
+        department=department["choice"],
+        department_probabilities=department["probabilities"],
+        urgency_score=urgency["score"],
+        urgency_probabilities=list(urgency["probabilities"].values()),
+        complaint_probability=answers["complaint"]["noul"],
+    )
+
+
+def sort_decision_from_answer(answer: dict[str, Any], checkpoint: str) -> SortDecision:
+    """Laya's and Jev's answer to one choice question."""
+    probabilities = {label: float(probability) for label, probability in answer["probabilities"].items()}
+    choice = str(answer["choice"])
+    return SortDecision(
+        choice=choice, probabilities=probabilities, top_probability=probabilities[choice], checkpoint=checkpoint
+    )
+
+
 class LayaEngine:
     name = "laya"
+    on_gpu = True
 
     def __init__(self, settings: Settings) -> None:
         from laya import Router  # imported here so the other engines run without the laya package
 
         self._router = Router(device=settings.device)
         self._router.preload(["english", "multilingual"])  # the two automatic routing picks from
-        self._questions = {
-            "department": {"type": "choice", "instructions": DEPARTMENT_INSTRUCTIONS, "criteria": DEPARTMENTS},
-            "urgency": {"type": "score", "instructions": URGENCY_INSTRUCTIONS, "criteria": URGENCY_LEVELS},
-            "complaint": {"type": "noul", "instructions": COMPLAINT_INSTRUCTIONS},
-        }
 
     def decide_batch(self, messages: list[str]) -> list[TriageDecision]:
-        results = self._router.predict_batch([{"state": message, "questions": self._questions} for message in messages])
-        return [self._to_decision(result["answers"]) for result in results]
+        results = self._router.predict_batch(
+            [{"state": message, "questions": TRIAGE_QUESTIONS} for message in messages]
+        )
+        return [decision_from_answers(result["answers"]) for result in results]
 
     def sort_batch(self, items: list[str], instructions: str, criteria: dict[str, str]) -> list[SortDecision]:
         questions = {"choice": {"type": "choice", "instructions": instructions, "criteria": criteria}}
         results = self._router.predict_batch([{"state": item, "questions": questions} for item in items])
-        return [self._to_sort_decision(result) for result in results]
+        return [
+            sort_decision_from_answer(result["answers"]["choice"], str(result.get("routing", {}).get("model", "laya")))
+            for result in results
+        ]
 
-    @staticmethod
-    def _to_decision(answers: dict) -> TriageDecision:
-        department = answers["department"]
-        urgency = answers["urgency"]
-        return TriageDecision(
-            department=department["choice"],
-            department_probabilities=department["probabilities"],
-            urgency_score=urgency["score"],
-            urgency_probabilities=list(urgency["probabilities"].values()),
-            complaint_probability=answers["complaint"]["noul"],
+
+class JevEngine:
+    """TypeSafe's Jev through its API: the same questions as Laya, one request per text, sent in parallel."""
+
+    name = "jev"
+    on_gpu = False
+
+    def __init__(self, settings: Settings) -> None:
+        api_key = os.environ.get("JEV_API_KEY", "").strip()
+        if not api_key:
+            raise SystemExit("JEV_API_KEY is empty in the secrets file. The jev engine needs it.")
+        self._model = settings.jev_model
+        self._max_concurrent_requests = settings.jev_max_concurrent_requests
+        self._http = httpx.Client(
+            base_url=settings.jev_base_url,
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=settings.jev_timeout_seconds,
         )
 
-    @staticmethod
-    def _to_sort_decision(result: dict) -> SortDecision:
-        answer = result["answers"]["choice"]
-        probabilities = {label: float(probability) for label, probability in answer["probabilities"].items()}
-        choice = str(answer["choice"])
-        checkpoint = str(result.get("routing", {}).get("model", "laya"))
-        return SortDecision(
-            choice=choice,
-            probabilities=probabilities,
-            top_probability=probabilities.get(choice, max(probabilities.values(), default=0.0)),
-            checkpoint=checkpoint,
-        )
+    def _ask(self, state: str, questions: dict[str, Any]) -> dict[str, Any]:
+        body = {"model": self._model, "state": state, "questions": questions}
+        try:
+            response = self._http.post("/v1/systemone", json=body)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as error:
+            detail = error.response.text[:300]
+            raise EngineUnavailable(f"Jev answered {error.response.status_code}: {detail}") from error
+        except httpx.HTTPError as error:
+            raise EngineUnavailable(f"Jev did not answer: {type(error).__name__}") from error
+        result: dict[str, Any] = response.json()
+        return result
+
+    def _ask_all(self, states: list[str], questions: dict[str, Any]) -> list[dict[str, Any]]:
+        # Network-bound, so a few requests in flight at once. pool.map keeps the input order
+        with ThreadPoolExecutor(max_workers=self._max_concurrent_requests) as pool:
+            return list(pool.map(lambda state: self._ask(state, questions), states))
+
+    def decide_batch(self, messages: list[str]) -> list[TriageDecision]:
+        return [decision_from_answers(result["answers"]) for result in self._ask_all(messages, TRIAGE_QUESTIONS)]
+
+    def sort_batch(self, items: list[str], instructions: str, criteria: dict[str, str]) -> list[SortDecision]:
+        questions = {"choice": {"type": "choice", "instructions": instructions, "criteria": criteria}}
+        return [
+            sort_decision_from_answer(result["answers"]["choice"], str(result["model"]))
+            for result in self._ask_all(items, questions)
+        ]
 
 
 class LetterProbabilityLLMEngine:
     """Each question becomes a lettered multiple-choice prompt: one forward pass, a softmax over the letters only."""
 
     name = "llm"
+    on_gpu = True
 
     def __init__(self, settings: Settings) -> None:
         self._device = settings.device
@@ -192,6 +256,7 @@ class EmbeddingSimilarityEngine:
     """Zero-shot classification by nearest option description, with the classification prompt on both sides."""
 
     name = "embedding"
+    on_gpu = True
 
     def __init__(self, settings: Settings) -> None:
         self._temperature = settings.embedding_temperature
@@ -243,7 +308,8 @@ class EmbeddingSimilarityEngine:
         return [sort_decision_from_probabilities(labels, row, "embedding") for row in rows]
 
 
-ENGINE_CLASSES: dict[str, type[TriageEngine]] = {
+ENGINE_CLASSES: dict[str, Callable[[Settings], TriageEngine]] = {
+    "jev": JevEngine,
     "laya": LayaEngine,
     "llm": LetterProbabilityLLMEngine,
     "embedding": EmbeddingSimilarityEngine,
