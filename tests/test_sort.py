@@ -7,13 +7,12 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.config import Settings
+from app.bootstrap import create_app
 from app.engines.base import EngineUnavailable
+from app.engines.decisions import SortDecision, TriageDecision
 from app.engines.jev import JevEngine
 from app.engines.questions import DEPARTMENTS, TRIAGE_QUESTIONS
-from app.main import create_app
-from app.schemas.sort import SortDecision
-from app.schemas.triage import TriageDecision
+from config.settings import Settings
 
 
 class FakeSortEngine:
@@ -216,3 +215,13 @@ def test_jev_engine_refuses_to_start_without_a_key(monkeypatch: pytest.MonkeyPat
     monkeypatch.delenv("JEV_API_KEY", raising=False)
     with pytest.raises(SystemExit, match="JEV_API_KEY"):
         JevEngine(make_settings())
+
+
+def test_a_client_over_the_rate_limit_gets_429_with_retry_after() -> None:
+    settings = make_settings().model_copy(update={"rate_limit_per_minute": 1})
+    with TestClient(create_app(settings=settings, engines={"laya": FakeSortEngine()})) as client:
+        first = client.post("/v1/sort", json={**SORT_BODY, "engine": "laya"})
+        second = client.post("/v1/sort", json={**SORT_BODY, "engine": "laya"})
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert 0 < int(second.headers["Retry-After"]) <= 60

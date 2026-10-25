@@ -85,32 +85,44 @@ What this shows, with only 50 messages (one message is 4 points of accuracy per 
 Before using any of these on real messages: a few hundred labelled messages from the real inbox, the routing
 thresholds fitted on part of them and measured on the rest, and for Laya its fine-tuning recipe on that data.
 
-## Files
+## Layout
 
-The service follows the Lab's backend layout (`docs/adr/0001-layout.md`): routes, controllers, services, engines,
-schemas and core under `src/app`.
+Feature-first (`docs/adr/0002-feature-first-layout.md`): each feature is one folder, and what both features share is
+in `app/platform` and `app/engines`.
 
-| Path | What |
-|---|---|
-| `src/app/api/routes/` | `GET /v1/engines`, `POST /v1/sort` (custom prompt and choices, `engine` picks Jev or Laya per request), `POST /v1/triage`, `POST /v1/triage/batch`, `/health`, `/meta`, `/` |
-| `src/app/controllers/dispatch.py` | the confidence gate on each sorted item, and a missing or failing engine as a 503 that names it |
-| `src/app/services/` | `Dispatcher` (picks the engine, GPU engines take turns, times each call) and `routing_action` |
-| `src/app/engines/` | `JevEngine`, `LayaEngine`, `LetterProbabilityLLMEngine`, `EmbeddingSimilarityEngine` behind `sort_batch` and `decide_batch`, and the triage questions in the System One wire format |
-| `src/app/schemas/` | the sort and triage request and response models |
-| `src/app/core/` | settings and the lifespan that loads the engines once |
-| `scripts/eval_triage.py` | runs engines on `data/messages.jsonl`, writes `results/triage_eval_*.csv` |
-| `scripts/laya_quickstart.py` | the smallest Laya call, prints the raw answer JSON |
-| `static/` | "Dispatch", the inbox screen: `index.html`, `inbox.js`, `inbox.css` on `app.css`, and `inbox.json` (the shift's 50 sample messages with invented senders and times) |
-| `Dockerfile`, `docker-compose.yml`, `requirements-app.txt` | the app on CPU in Docker |
+```
+main.py                     entry point
+config/settings.py          every environment value, with a comment
+app/
+  bootstrap.py              the app factory: CORS, the inbox screen's static files, /v1 behind the rate limit
+  platform/                 resources (engines and Redis, built once), dependencies, errors (503 and 429),
+                            rate_limit, redis
+  engines/                  Jev, Laya, the LLM letter-probability and embedding baselines behind sort_batch and
+                            decide_batch, the triage questions in the System One wire format, and the runner
+                            (finds the engine a request names, GPU engines take turns, times each call)
+  features/
+    sort/                   GET /v1/engines, POST /v1/sort: custom choices, the engine picked per request,
+                            the confidence gate on each item
+    triage/                 POST /v1/triage and /v1/triage/batch: the hospital preset and routing_action
+    health/                 /health, /meta and the inbox screen at /
+scripts/                    eval_triage.py, laya_quickstart.py (run from the repository root with PYTHONPATH=.)
+static/                     the inbox screen: index.html, inbox.js, inbox.css on app.css, inbox.json (the shift's 50
+                            sample messages with invented senders and times)
+Dockerfile, docker-compose.yml, requirements-app.txt   the app on CPU in Docker, with Redis
+```
+
+Each client address gets `RATE_LIMIT_PER_MINUTE` requests a minute on `/v1`, counted in Redis, then a 429 with
+`Retry-After`. The GPU serves one model call at a time, so one client cannot queue everyone else out.
 
 ## Run
 
 ```powershell
 copy .env.example .env                                   # once
-$env:PYTHONPATH='src'
+docker compose up -d redis                               # the shared rate limit
+$env:PYTHONPATH='.'
 python scripts/laya_quickstart.py
 python scripts/eval_triage.py jev laya                   # any of: jev laya llm embedding
-python -m uvicorn app.main:app --app-dir src --port 8010 # TRIAGE_ENGINE in .env picks the engine
+python main.py                                           # TRIAGE_ENGINE in .env picks the engine
 ```
 
 `JEV_API_KEY` in the secrets file (read, never copied) turns Jev on next to the local engine, so `POST /v1/sort`
@@ -140,4 +152,4 @@ screen shows its loading state meanwhile), 3.5 GB of memory, image 2.0 GB. Laya'
 
 ## Checks
 
-`ruff check . && ruff format --check . && mypy && pytest -q` (10 tests with fake engines, no GPU or network).
+`ruff check . && ruff format --check . && mypy && pytest -q` (11 tests with fake engines, no GPU or network).

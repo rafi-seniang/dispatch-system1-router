@@ -4,7 +4,7 @@ import json
 
 from laya import Router
 
-from app.core.config import load_settings
+from config.settings import load_settings
 
 settings = load_settings()
 router = Router(device=settings.device)

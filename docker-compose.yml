@@ -9,6 +9,7 @@ services:
       TRIAGE_ENGINE: laya
       DEVICE: cpu
       SECRETS_ENV_PATH: /run/secrets/secrets.env
+      REDIS_URL: redis://redis:6379/0
     volumes:
       # Read-only mount of the personal secrets file, for HF_TOKEN and JEV_API_KEY
       - ../../secrets/secrets.env:/run/secrets/secrets.env:ro
@@ -18,4 +19,16 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8010/health')"]
       interval: 15s
       start_period: 180s
+    depends_on:
+      redis:
+        condition: service_healthy
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: dispatch-redis
+    ports:
+      - "6382:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20

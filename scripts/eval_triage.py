@@ -10,9 +10,9 @@ import time
 import pandas as pd
 import torch
 
-from app.core.config import SERVICE_ROOT, Settings, load_settings
 from app.engines.registry import ENGINE_CLASSES
-from app.services.routing import routing_action
+from app.features.triage.service import routing_action
+from config.settings import SERVICE_ROOT, Settings, load_settings
 
 
 def run_engine(engine_name: str, messages: pd.DataFrame, settings: Settings) -> pd.DataFrame:
