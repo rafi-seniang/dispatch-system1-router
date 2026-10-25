@@ -1,4 +1,4 @@
-"""Settings for the decision-model experiments, read from .env next to this file."""
+"""Typed settings, read from .env at the service root. Every value the service reads is declared here."""
 
 import os
 from pathlib import Path
@@ -8,13 +8,13 @@ import torch
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-LAB_FOLDER = Path(__file__).parent
+SERVICE_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=LAB_FOLDER / ".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=SERVICE_ROOT / ".env", extra="ignore")
 
-    # Personal secrets file that holds HF_TOKEN (never printed)
+    # Personal secrets file that holds HF_TOKEN and JEV_API_KEY (never printed)
     secrets_env_path: Path
     # Engine the triage app serves
     triage_engine: Literal["laya", "jev", "llm", "embedding"] = "laya"
@@ -42,8 +42,8 @@ class Settings(BaseSettings):
 
 def load_settings() -> Settings:
     """Read settings and put HF_TOKEN into the environment for huggingface_hub."""
-    settings = Settings()  # type: ignore[call-arg]
-    secrets_path = (LAB_FOLDER / settings.secrets_env_path).resolve()
+    settings = Settings()
+    secrets_path = (SERVICE_ROOT / settings.secrets_env_path).resolve()
     if not secrets_path.is_file():
         raise SystemExit(f"Secrets file not found: {secrets_path}")
     load_dotenv(secrets_path, override=False)
@@ -52,9 +52,3 @@ def load_settings() -> Settings:
     if settings.device == "cuda" and not torch.cuda.is_available():
         raise SystemExit("DEVICE=cuda but PyTorch sees no GPU. Install the cu128 wheel or set DEVICE=cpu.")
     return settings
-
-
-def model_dtype(device: str) -> torch.dtype:
-    if device == "cuda" and torch.cuda.is_bf16_supported():
-        return torch.bfloat16
-    return torch.float32

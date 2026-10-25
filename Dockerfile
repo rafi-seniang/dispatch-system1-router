@@ -9,9 +9,9 @@ RUN useradd --create-home triage
 # Owned by triage before the volume mounts here, so a new volume inherits that owner
 RUN mkdir -p /home/triage/.cache/huggingface && chown -R triage:triage /home/triage/.cache
 WORKDIR /app
-COPY settings.py questions.py engines.py app.py /app/
+COPY src /app/src
 COPY static /app/static
 USER triage
 
 EXPOSE 8010
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8010"]
+CMD ["uvicorn", "app.main:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8010"]

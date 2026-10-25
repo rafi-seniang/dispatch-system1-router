@@ -54,7 +54,7 @@ least 1.5, send to a person when the department probability is below 0.7, otherw
 | False alarms (non-emergency escalated, of 20) | 1 | **0** | 1 | 5 | 1 | 6 | 4 | 5 |
 | Milliseconds per message (3 questions) | 46 (8 in flight, about 500 one at a time) | | 12 | | 286 | | 3 | |
 
-Jev and Laya were run together on 25 October 2026 (`python eval_triage.py jev laya`, results in
+Jev and Laya were run together on 25 October 2026 (`python scripts/eval_triage.py jev laya`, results in
 `results/triage_eval_jev_laya.csv`). The Qwen and embedding columns come from the earlier run
 (`results/triage_eval_laya_llm_embedding.csv`). The Qwen weights are no longer on this laptop.
 
@@ -87,13 +87,19 @@ thresholds fitted on part of them and measured on the rest, and for Laya its fin
 
 ## Files
 
-| File | What |
+The service follows the Lab's backend layout (`docs/adr/0001-layout.md`): routes, controllers, services, engines,
+schemas and core under `src/app`.
+
+| Path | What |
 |---|---|
-| `questions.py` | general `ChoiceOption` / `SortRequest` schemas plus the patient triage questions and `routing_action` |
-| `engines.py` | `JevEngine`, `LayaEngine`, `LetterProbabilityLLMEngine`, `EmbeddingSimilarityEngine` behind `sort_batch` and `decide_batch` |
-| `eval_triage.py` | runs engines on `data/messages.jsonl`, writes `results/triage_eval_*.csv` |
-| `laya_quickstart.py` | the smallest Laya call, prints the raw answer JSON |
-| `app.py` | FastAPI: `GET /v1/engines` (Laya, and Jev when `JEV_API_KEY` is set), `POST /v1/sort` (custom prompt and choices, `engine` picks Jev or Laya per request), `POST /v1/triage`, `POST /v1/triage/batch`, `/health`, `/meta`, `/docs` |
+| `src/app/api/routes/` | `GET /v1/engines`, `POST /v1/sort` (custom prompt and choices, `engine` picks Jev or Laya per request), `POST /v1/triage`, `POST /v1/triage/batch`, `/health`, `/meta`, `/` |
+| `src/app/controllers/dispatch.py` | the confidence gate on each sorted item, and a missing or failing engine as a 503 that names it |
+| `src/app/services/` | `Dispatcher` (picks the engine, GPU engines take turns, times each call) and `routing_action` |
+| `src/app/engines/` | `JevEngine`, `LayaEngine`, `LetterProbabilityLLMEngine`, `EmbeddingSimilarityEngine` behind `sort_batch` and `decide_batch`, and the triage questions in the System One wire format |
+| `src/app/schemas/` | the sort and triage request and response models |
+| `src/app/core/` | settings and the lifespan that loads the engines once |
+| `scripts/eval_triage.py` | runs engines on `data/messages.jsonl`, writes `results/triage_eval_*.csv` |
+| `scripts/laya_quickstart.py` | the smallest Laya call, prints the raw answer JSON |
 | `static/` | "Dispatch", the inbox screen: `index.html`, `inbox.js`, `inbox.css` on `app.css`, and `inbox.json` (the shift's 50 sample messages with invented senders and times) |
 | `Dockerfile`, `docker-compose.yml`, `requirements-app.txt` | the app on CPU in Docker |
 
@@ -101,9 +107,10 @@ thresholds fitted on part of them and measured on the rest, and for Laya its fin
 
 ```powershell
 copy .env.example .env                                   # once
-python laya_quickstart.py
-python eval_triage.py jev laya                           # any of: jev laya llm embedding
-python -m uvicorn app:app --port 8010                    # TRIAGE_ENGINE in .env picks the engine
+$env:PYTHONPATH='src'
+python scripts/laya_quickstart.py
+python scripts/eval_triage.py jev laya                   # any of: jev laya llm embedding
+python -m uvicorn app.main:app --app-dir src --port 8010 # TRIAGE_ENGINE in .env picks the engine
 ```
 
 `JEV_API_KEY` in the secrets file (read, never copied) turns Jev on next to the local engine, so `POST /v1/sort`
@@ -130,3 +137,7 @@ The secrets file is mounted read-only for `HF_TOKEN`. The image runs as a non-ro
 Desktop on this laptop's CPU: 300 to 850 ms per message, 29 s for the shift's 50 messages on first load (the
 screen shows its loading state meanwhile), 3.5 GB of memory, image 2.0 GB. Laya's `predict_batch` takes
 `batch_size` and `sort_by_length`, which its README measured at 1.4 to 1.8 times faster on CPU (not tried here).
+
+## Checks
+
+`ruff check . && ruff format --check . && mypy && pytest -q` (10 tests with fake engines, no GPU or network).

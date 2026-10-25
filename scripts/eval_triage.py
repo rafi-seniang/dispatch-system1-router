@@ -1,6 +1,6 @@
 """Run each engine on data/messages.jsonl and compare accuracy, routing outcomes and speed.
 
-Usage: python eval_triage.py [engine ...]   (default: laya llm embedding)
+Usage: python scripts/eval_triage.py [engine ...]   (default: laya llm embedding)
 """
 
 import gc
@@ -10,9 +10,9 @@ import time
 import pandas as pd
 import torch
 
-from engines import ENGINE_CLASSES
-from questions import routing_action
-from settings import LAB_FOLDER, Settings, load_settings
+from app.core.config import SERVICE_ROOT, Settings, load_settings
+from app.engines.registry import ENGINE_CLASSES
+from app.services.routing import routing_action
 
 
 def run_engine(engine_name: str, messages: pd.DataFrame, settings: Settings) -> pd.DataFrame:
@@ -82,7 +82,7 @@ def summarise(per_message: pd.DataFrame) -> pd.DataFrame:
 def main() -> None:
     settings = load_settings()
     engine_names = sys.argv[1:] or list(ENGINE_CLASSES)
-    messages = pd.read_json(LAB_FOLDER / "data" / "messages.jsonl", lines=True)
+    messages = pd.read_json(SERVICE_ROOT / "data" / "messages.jsonl", lines=True)
     print(f"{len(messages)} labelled messages {messages['language'].value_counts().to_dict()}\n")
 
     per_message = pd.concat([run_engine(name, messages, settings) for name in engine_names], ignore_index=True)
@@ -105,7 +105,7 @@ def main() -> None:
     ]
     print(wrong_department[columns].round(2).to_string(index=False))
 
-    output_path = LAB_FOLDER / "results" / f"triage_eval_{'_'.join(engine_names)}.csv"
+    output_path = SERVICE_ROOT / "results" / f"triage_eval_{'_'.join(engine_names)}.csv"
     output_path.parent.mkdir(exist_ok=True)
     per_message.to_csv(output_path, index=False)
     print(f"\nPer-message results written to {output_path}")

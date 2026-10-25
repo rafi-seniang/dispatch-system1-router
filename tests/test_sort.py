@@ -5,12 +5,15 @@ from pathlib import Path
 
 import httpx
 import pytest
-from app import create_app
 from fastapi.testclient import TestClient
 
-from engines import TRIAGE_QUESTIONS, EngineUnavailable, JevEngine
-from questions import DEPARTMENTS, SortDecision, TriageDecision
-from settings import Settings
+from app.core.config import Settings
+from app.engines.base import EngineUnavailable
+from app.engines.jev import JevEngine
+from app.engines.questions import DEPARTMENTS, TRIAGE_QUESTIONS
+from app.main import create_app
+from app.schemas.sort import SortDecision
+from app.schemas.triage import TriageDecision
 
 
 class FakeSortEngine:
