@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.bootstrap import create_app
 from app.engines.base import EngineUnavailable
-from app.engines.decisions import SortDecision, TriageDecision
+from app.engines.decisions import ImageInputItem, SortDecision, TriageDecision
 from app.engines.gemini import GeminiDecisionEngine
 from app.engines.jev import JevEngine
 from app.engines.questions import DEPARTMENTS, TRIAGE_QUESTIONS
@@ -415,3 +415,24 @@ def test_a_file_that_is_not_the_named_picture_is_refused_before_any_engine() -> 
         not_base64 = client.post("/v1/sort/images", json=body)
     assert wrong_type.status_code == 422
     assert not_base64.status_code == 422
+
+
+def test_jev_engine_sends_a_picture_as_an_asset_with_the_image_header(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[httpx.Request] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        answers = {"choice": {"type": "choice", "choice": "A", "probabilities": {"A": 0.8, "B": 0.2}}}
+        return httpx.Response(200, json={"model": "jev-1.14.0", "answers": answers})
+
+    engine = jev_engine_against(httpx.MockTransport(answer), monkeypatch)
+    picture = ImageInputItem(data_base64=TINY_PNG, mime_type="image/png")
+    decisions = engine.sort_images_batch([picture], "Indoor or outdoor?", {"A": "outdoor", "B": "indoor"})
+    text_request = engine.sort_batch(["a line of text"], "Pick", {"A": "a", "B": "b"})
+
+    body = json.loads(seen[0].content)
+    placeholder = body["state"]
+    assert body["assets"] == {placeholder: {"type": "image", "format": "png", "data_base64": TINY_PNG}}
+    assert seen[0].headers["TypeSafe-Danger-Zone-Images"] == "true"
+    assert "TypeSafe-Danger-Zone-Images" not in seen[1].headers  # a text request does not opt in
+    assert decisions[0].choice == "A" and text_request[0].choice == "A"

@@ -27,7 +27,7 @@ class SortService:
     def engine_options(self) -> list[EngineOption]:
         engines = self._runner.engines
         jev_detail = (
-            f"{self._settings.jev_model} through api.typesafe.ai, about half a second a request."
+            f"{self._settings.jev_model} through api.typesafe.ai, about half a second a request (text + images)."
             if "jev" in engines
             else "Add JEV_API_KEY to enable Jev."
         )
@@ -76,6 +76,6 @@ class SortService:
         engine = self._runner.engine(engine_id)
         sort_images_batch = getattr(engine, "sort_images_batch", None)
         if sort_images_batch is None:
-            raise EngineUnavailable(f"{engine.name} only accepts text inputs. Choose gemini for images.")
+            raise EngineUnavailable(f"{engine.name} only accepts text inputs. Choose jev or gemini for images.")
         decisions, latency_ms = self._runner.run(engine, lambda: sort_images_batch(images, instructions, criteria))
         return engine.name, decisions, latency_ms

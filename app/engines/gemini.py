@@ -74,7 +74,6 @@ class GeminiDecisionEngine:
             )
             for key in api_keys
         ]
-        self._client = self._clients[0]
         self._cursor_lock = threading.Lock()
         self._key_cursor = 0
 

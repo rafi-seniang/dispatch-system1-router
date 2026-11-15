@@ -1,15 +1,26 @@
 """Jev: TypeSafe's hosted System One model, through its API (POST /v1/systemone)."""
 
 import os
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import httpx
 
 from app.engines.base import EngineUnavailable, decision_from_answers, sort_decision_from_answer
-from app.engines.decisions import SortDecision, TriageDecision
+from app.engines.decisions import ImageInputItem, SortDecision, TriageDecision
 from app.engines.questions import TRIAGE_QUESTIONS, choice_question
 from config.settings import Settings
+
+# TypeSafe's opt-in header, required on every request that carries an image
+IMAGE_HEADERS = {"TypeSafe-Danger-Zone-Images": "true"}
+
+
+def image_state(image: ImageInputItem) -> dict[str, Any]:
+    """The picture as Jev's state. Jev swaps a placeholder for its asset anywhere in the text, so it is random."""
+    placeholder = f"image-{uuid.uuid4().hex}"
+    asset = {"type": "image", "format": image.mime_type.removeprefix("image/"), "data_base64": image.data_base64}
+    return {"state": placeholder, "assets": {placeholder: asset}}
 
 
 class JevEngine:
@@ -30,10 +41,13 @@ class JevEngine:
             timeout=settings.jev_timeout_seconds,
         )
 
-    def _ask(self, state: str, questions: dict[str, Any]) -> dict[str, Any]:
-        body = {"model": self._model, "state": state, "questions": questions}
+    def _ask(self, state: str | dict[str, Any], questions: dict[str, Any]) -> dict[str, Any]:
+        """A text is the state itself. A picture comes as image_state's state and assets."""
+        content = {"state": state} if isinstance(state, str) else state
+        headers = IMAGE_HEADERS if "assets" in content else None
+        body = {"model": self._model, **content, "questions": questions}
         try:
-            response = self._http.post("/v1/systemone", json=body)
+            response = self._http.post("/v1/systemone", json=body, headers=headers)
             response.raise_for_status()
         except httpx.HTTPStatusError as error:
             detail = error.response.text[:300]
@@ -43,7 +57,7 @@ class JevEngine:
         result: dict[str, Any] = response.json()
         return result
 
-    def _ask_all(self, states: list[str], questions: dict[str, Any]) -> list[dict[str, Any]]:
+    def _ask_all(self, states: list[str] | list[dict[str, Any]], questions: dict[str, Any]) -> list[dict[str, Any]]:
         # Network-bound, so a few requests in flight at once. pool.map keeps the input order
         with ThreadPoolExecutor(max_workers=self._max_concurrent_requests) as pool:
             return list(pool.map(lambda state: self._ask(state, questions), states))
@@ -55,4 +69,13 @@ class JevEngine:
         return [
             sort_decision_from_answer(result["answers"]["choice"], str(result["model"]))
             for result in self._ask_all(items, choice_question(instructions, criteria))
+        ]
+
+    def sort_images_batch(
+        self, images: list[ImageInputItem], instructions: str, criteria: dict[str, str]
+    ) -> list[SortDecision]:
+        states = [image_state(image) for image in images]
+        return [
+            sort_decision_from_answer(result["answers"]["choice"], str(result["model"]))
+            for result in self._ask_all(states, choice_question(instructions, criteria))
         ]
