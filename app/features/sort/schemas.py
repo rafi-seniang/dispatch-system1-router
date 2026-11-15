@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from app.engines.decisions import SortDecision
 
-EngineId = Literal["laya", "jev"]
+EngineId = Literal["laya", "jev", "gemini"]
 
 
 class ChoiceOption(BaseModel):
@@ -54,4 +54,5 @@ class EngineOption(BaseModel):
 
 
 class EnginesResponse(BaseModel):
+    default_engine: EngineId = "jev"
     engines: list[EngineOption]

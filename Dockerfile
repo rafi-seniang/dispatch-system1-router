@@ -1,9 +1,15 @@
 FROM python:3.11-slim
 
-# CPU build of PyTorch first, so pip does not pull the multi-GB CUDA wheel for Linux
-RUN pip install --no-cache-dir torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
-COPY requirements-app.txt /app/
-RUN pip install --no-cache-dir -r /app/requirements-app.txt
+ARG INCLUDE_LOCAL_MODELS=false
+
+COPY requirements-hosted.txt requirements-app.txt /app/
+# Install CPU PyTorch and local Hugging Face packages only when INCLUDE_LOCAL_MODELS=true
+RUN if [ "$INCLUDE_LOCAL_MODELS" = "true" ]; then \
+      pip install --no-cache-dir torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu && \
+      pip install --no-cache-dir -r /app/requirements-app.txt; \
+    else \
+      pip install --no-cache-dir -r /app/requirements-hosted.txt; \
+    fi
 
 RUN useradd --create-home triage
 # Owned by triage before the volume mounts here, so a new volume inherits that owner
@@ -16,4 +22,4 @@ COPY static /app/static
 USER triage
 
 EXPOSE 8010
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8010"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8010 --proxy-headers --no-access-log"]

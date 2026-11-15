@@ -1,9 +1,4 @@
 # The triage app in Docker (CPU). torch is installed first from the CPU index, see Dockerfile.
+-r requirements-hosted.txt
 laya==0.4.15
 sentence-transformers==6.2.0
-fastapi==0.162.0
-uvicorn[standard]
-pydantic-settings
-python-dotenv
-httpx==0.28.1
-redis==8.1.0

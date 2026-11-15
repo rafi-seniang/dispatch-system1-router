@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from app.bootstrap import create_app
 from app.engines.base import EngineUnavailable
 from app.engines.decisions import SortDecision, TriageDecision
+from app.engines.gemini import GeminiDecisionEngine
 from app.engines.jev import JevEngine
 from app.engines.questions import DEPARTMENTS, TRIAGE_QUESTIONS
 from config.settings import Settings
@@ -225,3 +226,110 @@ def test_a_client_over_the_rate_limit_gets_429_with_retry_after() -> None:
     assert first.status_code == 200
     assert second.status_code == 429
     assert 0 < int(second.headers["Retry-After"]) <= 60
+
+
+def test_a_client_over_the_daily_cap_gets_429() -> None:
+    settings = make_settings().model_copy(update={"daily_requests_per_caller": 1})
+    with TestClient(create_app(settings=settings, engines={"laya": FakeSortEngine()})) as client:
+        assert client.post("/v1/sort", json={**SORT_BODY, "engine": "laya"}).status_code == 200
+        blocked = client.post("/v1/sort", json={**SORT_BODY, "engine": "laya"})
+    assert blocked.status_code == 429
+    assert "today" in blocked.json()["detail"]
+
+
+def gemini_engine_against(handler: httpx.MockTransport, monkeypatch: pytest.MonkeyPatch) -> GeminiDecisionEngine:
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini_test_key")
+    http_client = httpx.Client(transport=handler)
+    return GeminiDecisionEngine(make_settings(), http_client=http_client)
+
+
+def test_gemini_engine_sends_decisions_request_and_orders_urgency_probabilities(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[httpx.Request] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        body = json.loads(request.content)
+        if "department" in body["questions"]:
+            answers = {
+                "department": {
+                    "type": "choice",
+                    "choice": "emergency",
+                    "confidence": 0.99,
+                    "probabilities": {name: float(name == "emergency") for name in DEPARTMENTS},
+                },
+                # Returned out of numerical key order to verify index sorting
+                "urgency": {
+                    "type": "score",
+                    "score": 1.8,
+                    "confidence": 0.85,
+                    "probabilities": {"2": 0.85, "0": 0.05, "1": 0.1},
+                },
+                "complaint": {"type": "noul", "noul": 0.04, "confidence": 0.96},
+            }
+        else:
+            answers = {
+                "choice": {
+                    "type": "choice",
+                    "choice": "B",
+                    "confidence": 0.9,
+                    "probabilities": {"A": 0.1, "B": 0.9},
+                }
+            }
+        return httpx.Response(200, json={"answers": answers})
+
+    engine = gemini_engine_against(httpx.MockTransport(answer), monkeypatch)
+    triage = engine.decide_batch(["Anak saya sesak napas"])[0]
+    sorted_items = engine.sort_batch(["one", "two"], "Pick A or B", {"A": "first", "B": "second"})
+
+    assert seen[0].url.path == "/v1beta/decisions"
+    assert seen[0].headers["x-goog-api-key"] == "gemini_test_key"
+    assert (triage.department, triage.urgency_score, triage.complaint_probability) == ("emergency", 1.8, 0.04)
+    assert triage.urgency_probabilities == [0.05, 0.1, 0.85]
+    assert [item.choice for item in sorted_items] == ["B", "B"]
+    assert sorted_items[0].checkpoint == "gemini-decision-1"
+
+
+def test_gemini_engine_turns_an_api_error_into_engine_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(request: httpx.Request) -> httpx.Response:
+        body = {"error": {"code": 429, "message": "quota exceeded", "status": "RESOURCE_EXHAUSTED"}}
+        return httpx.Response(429, json=body)
+
+    engine = gemini_engine_against(httpx.MockTransport(refuse), monkeypatch)
+    with pytest.raises(EngineUnavailable, match="Gemini answered 429"):
+        engine.sort_batch(["text"], "Pick A or B", {"A": "", "B": ""})
+
+
+def test_gemini_engine_refuses_to_start_without_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    with pytest.raises(SystemExit, match="GEMINI_API_KEY"):
+        GeminiDecisionEngine(make_settings())
+
+
+def test_sort_with_gemini_and_default_engine_reporting(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeGeminiEngine(FakeJevEngine):
+        name = "gemini"
+
+        def sort_batch(self, items: list[str], instructions: str, criteria: dict[str, str]) -> list[SortDecision]:
+            last = list(criteria)[-1]
+            probabilities = {label: (1.0 if label == last else 0.0) for label in criteria}
+            decision = SortDecision(
+                choice=last, probabilities=probabilities, top_probability=1.0, checkpoint="gemini-decision-1"
+            )
+            return [decision for _ in items]
+
+    settings = make_settings().model_copy(update={"triage_engine": "jev"})
+    engines = {"jev": FakeJevEngine(), "gemini": FakeGeminiEngine()}
+    with TestClient(create_app(settings=settings, engines=engines)) as client:
+        engines_body = client.get("/v1/engines").json()
+        assert engines_body["default_engine"] == "jev"
+        by_id = {item["id"]: item for item in engines_body["engines"]}
+        assert by_id["jev"]["available"] is True
+        assert by_id["gemini"]["available"] is True
+        assert by_id["laya"]["available"] is False
+
+        response = client.post("/v1/sort", json={**SORT_BODY, "engine": "gemini"})
+    assert response.status_code == 200
+    assert response.json()["engine"] == "gemini"
+    assert response.json()["results"][0]["checkpoint"] == "gemini-decision-1"

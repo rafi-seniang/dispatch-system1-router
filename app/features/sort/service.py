@@ -11,22 +11,31 @@ class SortService:
         self._runner = runner
         self._settings = settings
 
+    def default_engine(self) -> EngineId:
+        name = self._runner.triage_engine.name
+        if name == "jev":
+            return "jev"
+        if name == "gemini":
+            return "gemini"
+        if name == "laya":
+            return "laya"
+        if "jev" in self._runner.engines:
+            return "jev"
+        return "gemini" if "gemini" in self._runner.engines else "laya"
+
     def engine_options(self) -> list[EngineOption]:
         engines = self._runner.engines
         jev_detail = (
             f"{self._settings.jev_model} through api.typesafe.ai, about half a second a request."
             if "jev" in engines
-            else "Add JEV_API_KEY to the secrets file to enable Jev."
+            else "Add JEV_API_KEY to enable Jev."
+        )
+        gemini_detail = (
+            f"{self._settings.gemini_decision_model} through Google Gemini API (v1beta)."
+            if "gemini" in engines
+            else "Add GEMINI_API_KEY to enable Gemini Decision 1."
         )
         return [
-            EngineOption(
-                id="laya",
-                name="Laya",
-                provider="Convai Innovations (Apache 2.0, local GPU)",
-                available="laya" in engines,
-                status_label="Active" if "laya" in engines else "Not loaded",
-                detail="ModernBERT-large for English and mmBERT-base for 100+ languages.",
-            ),
             EngineOption(
                 id="jev",
                 name="Jev",
@@ -34,6 +43,22 @@ class SortService:
                 available="jev" in engines,
                 status_label="Active" if "jev" in engines else "Needs key",
                 detail=jev_detail,
+            ),
+            EngineOption(
+                id="gemini",
+                name="Gemini Decision",
+                provider="Google Gemini API (free tier, inputs sent to Google)",
+                available="gemini" in engines,
+                status_label="Active" if "gemini" in engines else "Needs key",
+                detail=gemini_detail,
+            ),
+            EngineOption(
+                id="laya",
+                name="Laya",
+                provider="Convai Innovations (Apache 2.0, local GPU)",
+                available="laya" in engines,
+                status_label="Active" if "laya" in engines else "Not loaded",
+                detail="ModernBERT-large for English and mmBERT-base for 100+ languages.",
             ),
         ]
 
