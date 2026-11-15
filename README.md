@@ -35,8 +35,8 @@ probabilities are what make it useful: code can act on confident answers and sen
 
 | Engine | How | Size on GPU |
 |---|---|---|
-| `jev` | TypeSafe's API: `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer $JEV_API_KEY`, model `jev-latest` (answered as `jev-1.14.0`). One text per request, up to 8 requests in flight | none, hosted |
-| `gemini` | Google's Decisions API (`v1beta`): `POST /v1beta/decisions` via `google-genai` with `GEMINI_API_KEY`, model `gemini-decision-1`. One text per request, up to 8 requests in flight | none, hosted |
+| `jev` | TypeSafe's API: `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer $JEV_API_KEY`, model `jev-latest` (answered as `jev-1.14.0`). One text or one picture per request, up to 8 requests in flight. A picture goes as an asset (PNG or JPEG) that replaces a random placeholder in the state, with the `TypeSafe-Danger-Zone-Images: true` header | none, hosted |
+| `gemini` | Google's Decisions API (`v1beta`): `POST /v1beta/decisions` via `google-genai` with `GEMINI_API_KEY`, model `gemini-decision-1`. One text or one picture per request, up to 8 requests in flight. Up to three keys, the next on a 429 | none, hosted |
 | `laya` | `laya.Router`, English text to the ModernBERT checkpoint, other text to the mmBERT one | about 3 GB (the English and multilingual checkpoints) |
 | `llm` | Qwen3.5-2B (Apache 2.0). Each question becomes a lettered multiple-choice prompt, one forward pass, softmax over the letters A to E only | 3.5 GB in bf16 |
 | `embedding` | EmbeddingGemma 2, cosine similarity between the message and each option's description, softmax with temperature 0.02 | 1.2 GB (text only) |
@@ -106,8 +106,9 @@ app/
                             sort_batch and decide_batch, the triage questions in the System One wire format, and the
                             runner (finds the engine a request names, GPU engines take turns, times each call)
   features/
-    sort/                   GET /v1/engines, POST /v1/sort: custom choices, the engine picked per request,
-                            the confidence gate on each item
+    sort/                   GET /v1/engines, POST /v1/sort (texts) and POST /v1/sort/images (1 to 10 JPEG or PNG
+                            pictures, refused with 422 when a file is not the named type): custom choices, the
+                            engine picked per request, the confidence gate on each item
     triage/                 POST /v1/triage and /v1/triage/batch: the hospital preset and routing_action
     health/                 /health, /meta and the inbox screen at /
 scripts/                    eval_triage.py, laya_quickstart.py (run from the repository root with PYTHONPATH=.)
@@ -135,6 +136,11 @@ any local engine, so `POST /v1/sort` can send `"engine": "jev"`, `"engine": "gem
 a key, an engine is listed as unavailable ("Needs JEV_API_KEY" / "Needs GEMINI_API_KEY") and requests to it return a
 503 that says so. An API error (bad key, rate limit, timeout) returns a 503 naming that backend, never a quiet
 fallback. `DAILY_REQUESTS_PER_CALLER` and `DAILY_REQUESTS_TOTAL` enforce optional UTC daily caps via Redis or memory.
+A caller is counted by address: the service takes no API key, so a sent `X-API-Key` does not start a fresh count.
+
+Pictures, checked on 16 November 2026 with six photographs from Lens's archive (surfing, a tiger, Mars, the Burj
+Khalifa, sushi, a helicopter) and six custom choices: Jev 6 of 6 right in 594 ms for the batch, Gemini Decision 1 6 of
+6 in 1,713 ms. Both put Mars at 0.70, at the gate. Six pictures show the wiring works, not a rate.
 
 Open http://localhost:8010. The screen loads the shift's 50 messages, triages them in one call, and lists what
 needs a person: "Escalate now" first, then "Needs a person", each in arrival order. Opening a message shows the
