@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 
 from app.engines.base import TriageEngine
+from app.engines.gemini import GeminiDecisionEngine
 from app.engines.jev import JevEngine
 from app.engines.registry import ENGINE_CLASSES
 from app.engines.runner import EngineRunner
@@ -25,11 +26,13 @@ class Resources:
 
 
 def load_engines(settings: Settings) -> dict[str, TriageEngine]:
-    """The engine TRIAGE_ENGINE names, plus Jev whenever its key is set, so a request can pick either."""
+    """The engine TRIAGE_ENGINE names, plus Jev and Gemini Decision whenever their keys are set."""
     primary = ENGINE_CLASSES[settings.triage_engine](settings)
-    engines = {primary.name: primary}
+    engines: dict[str, TriageEngine] = {primary.name: primary}
     if "jev" not in engines and os.environ.get("JEV_API_KEY", "").strip():
         engines["jev"] = JevEngine(settings)
+    if "gemini" not in engines and os.environ.get("GEMINI_API_KEY", "").strip():
+        engines["gemini"] = GeminiDecisionEngine(settings)
     return engines
 
 
@@ -43,9 +46,9 @@ def lifespan(
         loaded = engines or load_engines(settings)  # the models load here, before the first request
         redis = await connect_redis(settings)
         rate_limiter: RateLimiter = RedisRateLimiter(redis) if redis is not None else InMemoryRateLimiter()
-        app.state.resources = Resources(
-            runner=EngineRunner(loaded, loaded[settings.triage_engine]), rate_limiter=rate_limiter, redis=redis
-        )
+        fallback = next(iter(loaded.values()))
+        default = loaded[settings.triage_engine] if engines is None else loaded.get(settings.triage_engine, fallback)
+        app.state.resources = Resources(runner=EngineRunner(loaded, default), rate_limiter=rate_limiter, redis=redis)
         yield
         if redis is not None:
             await redis.aclose()

@@ -26,7 +26,9 @@ class EngineRunner:
         engine = self.engines.get(engine_id)
         if engine is None:
             if engine_id == "jev":
-                raise EngineNotLoaded("Jev needs JEV_API_KEY in the secrets file.")
+                raise EngineNotLoaded("Jev needs JEV_API_KEY in the secrets file or environment.")
+            if engine_id == "gemini":
+                raise EngineNotLoaded("Gemini Decision needs GEMINI_API_KEY in the secrets file or environment.")
             raise EngineNotLoaded(f"{engine_id} is not loaded. Set TRIAGE_ENGINE={engine_id} to serve it.")
         return engine
 

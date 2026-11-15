@@ -8,11 +8,10 @@ import sys
 import time
 
 import pandas as pd
-import torch
 
 from app.engines.registry import ENGINE_CLASSES
 from app.features.triage.service import routing_action
-from config.settings import SERVICE_ROOT, Settings, load_settings
+from config.settings import LOCAL_MODEL_ENGINES, SERVICE_ROOT, Settings, load_settings
 
 
 def run_engine(engine_name: str, messages: pd.DataFrame, settings: Settings) -> pd.DataFrame:
@@ -31,7 +30,9 @@ def run_engine(engine_name: str, messages: pd.DataFrame, settings: Settings) -> 
 
     del engine
     gc.collect()
-    if settings.device == "cuda":
+    if engine_name in LOCAL_MODEL_ENGINES and settings.device == "cuda":
+        import torch
+
         torch.cuda.empty_cache()
 
     return messages.assign(

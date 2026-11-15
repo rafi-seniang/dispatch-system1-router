@@ -10,7 +10,7 @@ class SortController:
         self._service = service
 
     def engines(self) -> EnginesResponse:
-        return EnginesResponse(engines=self._service.engine_options())
+        return EnginesResponse(default_engine=self._service.default_engine(), engines=self._service.engine_options())
 
     def sort(self, body: SortRequest) -> SortResponse:
         criteria = {option.label: option.description for option in body.choices}

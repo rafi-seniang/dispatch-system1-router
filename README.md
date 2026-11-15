@@ -1,8 +1,9 @@
-# Dispatch: System 1 decision router (`Jev` / `Laya` / LLM logprobs)
+# Dispatch: System 1 decision router (`Jev` / `Gemini Decision 1` / `Laya` / LLM logprobs)
 
-Tried 25 October 2026 on the RTX 5050. Jev (hosted) and three open ways to get typed decisions without generating
-text, compared on the same 50 labelled messages, plus a configurable System 1 router API (`POST /v1/sort`) and web
-app where each request picks Jev or Laya.
+Tried 25 October 2026 on the RTX 5050, with Google's `gemini-decision-1` evaluated alongside Jev on 15 November 2026.
+Hosted engines (Jev and Gemini Decision 1) and three open local ways to get typed decisions without generating text,
+compared on the same 50 labelled messages, plus a configurable System 1 router API (`POST /v1/sort`) and web app where
+each request picks `jev`, `gemini`, or `laya`.
 
 ## What a decision model is
 
@@ -35,6 +36,7 @@ probabilities are what make it useful: code can act on confident answers and sen
 | Engine | How | Size on GPU |
 |---|---|---|
 | `jev` | TypeSafe's API: `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer $JEV_API_KEY`, model `jev-latest` (answered as `jev-1.14.0`). One text per request, up to 8 requests in flight | none, hosted |
+| `gemini` | Google's Decisions API (`v1beta`): `POST /v1beta/decisions` via `google-genai` with `GEMINI_API_KEY`, model `gemini-decision-1`. One text per request, up to 8 requests in flight | none, hosted |
 | `laya` | `laya.Router`, English text to the ModernBERT checkpoint, other text to the mmBERT one | about 3 GB (the English and multilingual checkpoints) |
 | `llm` | Qwen3.5-2B (Apache 2.0). Each question becomes a lettered multiple-choice prompt, one forward pass, softmax over the letters A to E only | 3.5 GB in bf16 |
 | `embedding` | EmbeddingGemma 2, cosine similarity between the message and each option's description, softmax with temperature 0.02 | 1.2 GB (text only) |
@@ -44,29 +46,32 @@ probabilities are what make it useful: code can act on confident answers and sen
 Routing rule (`questions.routing_action`): escalate when the department is emergency or expected urgency is at
 least 1.5, send to a person when the department probability is below 0.7, otherwise route automatically.
 
-| | Jev EN | Jev ID | Laya EN | Laya ID | Qwen3.5-2B EN | Qwen3.5-2B ID | Embedding EN | Embedding ID |
-|---|---|---|---|---|---|---|---|---|
-| Department accuracy | **1.00** | **1.00** | 0.96 | 0.80 | **1.00** | 0.88 | 0.84 | 0.68 |
-| Complaint accuracy | **0.96** | **0.96** | **0.96** | **0.96** | **0.96** | 0.84 | 0.68 | 0.52 |
-| Urgency accuracy (rounded score) | **0.80** | **0.80** | 0.40 | 0.28 | 0.48 | 0.36 | 0.56 | 0.40 |
-| Emergencies escalated | **5 of 5** | **5 of 5** | 5 of 5 | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | 3 of 5 |
-| Routed automatically to the wrong team | **0** | **0** | 0 | 1 | 0 | 0 | 0 | 1 |
-| False alarms (non-emergency escalated, of 20) | 1 | **0** | 1 | 5 | 1 | 6 | 4 | 5 |
-| Milliseconds per message (3 questions) | 46 (8 in flight, about 500 one at a time) | | 12 | | 286 | | 3 | |
+| | Jev EN | Jev ID | Gemini EN | Gemini ID | Laya EN | Laya ID | Qwen3.5-2B EN | Qwen3.5-2B ID | Embedding EN | Embedding ID |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Department accuracy | **1.00** | **1.00** | **1.00** | **1.00** | 0.96 | 0.80 | **1.00** | 0.88 | 0.84 | 0.68 |
+| Complaint accuracy | **0.96** | **0.96** | **0.96** | 0.92 | **0.96** | **0.96** | **0.96** | 0.84 | 0.68 | 0.52 |
+| Urgency accuracy (rounded score) | **0.84** | **0.76** | 0.76 | 0.60 | 0.40 | 0.28 | 0.48 | 0.36 | 0.56 | 0.40 |
+| Emergencies escalated | **5 of 5** | **5 of 5** | **5 of 5** | **5 of 5** | 5 of 5 | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | 3 of 5 |
+| Routed automatically to the wrong team | **0** | **0** | **0** | **0** | 0 | 1 | 0 | 0 | 0 | 1 |
+| False alarms (non-emergency escalated, of 20) | **0** | **0** | **0** | **0** | 1 | 5 | 1 | 6 | 4 | 5 |
+| Milliseconds per message (3 questions) | 35 (8 in flight) | | 76 (8 in flight) | | 12 | | 286 | | 3 | |
 
-Jev and Laya were run together on 25 October 2026 (`python scripts/eval_triage.py jev laya`, results in
-`results/triage_eval_jev_laya.csv`). The Qwen and embedding columns come from the earlier run
-(`results/triage_eval_laya_llm_embedding.csv`). The Qwen weights are no longer on this laptop.
+Gemini Decision 1 and Jev were run together on 15 November 2026 (`python scripts/eval_triage.py gemini jev`, results in
+`results/triage_eval_gemini_jev.csv`). The Laya column comes from `results/triage_eval_jev_laya.csv` (25 October 2026,
+where Jev scored 0.80 urgency accuracy, 1 false alarm in EN, and 46 ms per message). The Qwen and embedding columns
+come from the earlier run (`results/triage_eval_laya_llm_embedding.csv`). The Qwen weights are no longer on this laptop.
 
 What this shows, with only 50 messages (one message is 4 points of accuracy per language):
 
-- **Jev is the best engine on every measure here.** Every department right in both languages, including all
-  four Indonesian messages Laya got wrong (the dentist cancellation, the 3-hour queue, the insurance claim, and
-  the child who drank floor cleaner, which Laya routed to medication at 0.78), every emergency escalated, and
-  the only usable urgency score (0.80 against 0.28 to 0.56 for the others). It sent nothing to a person because
-  it was confident and right on all 50. The costs: it is a paid hosted API (about 435 input tokens per message
-  for the three questions, $0.042 per million), the text leaves the building, and a single request takes about
-  half a second, so a batch needs parallel requests.
+- **Jev is still the best overall engine here.** It matched 100% department accuracy, raised 0 false alarms in the
+  November run, had the highest urgency accuracy (0.84 EN, 0.76 ID), and ran at 35 ms per message at 8-way concurrency.
+  The costs: it is a paid hosted API (about 435 input tokens per message for the three questions, $0.042 per million),
+  the text leaves the building, and a single request takes about half a second, so a batch needs parallel requests.
+- **Gemini Decision 1 matches Jev on department accuracy (1.00 EN, 1.00 ID) and safety.** All 5 emergencies in each
+  language escalated, with 0 wrong auto-routes and 0 false alarms, at 76 ms per message with 8 requests in flight. It
+  is weaker than Jev on urgency calibration (0.76 EN, 0.60 ID, tending to score routine messages higher near 0.6 to
+  0.9) and missed the double-QRIS billing complaint in Indonesian (`i03`). It exposes a free-tier option under Google
+  AI Studio alongside Jev.
 - **Qwen3.5-2B read as a decision model was the safest open option.** Every emergency escalated, nothing routed to the
   wrong team, and every wrong department came with a probability under 0.7, so the confidence gate caught
   them. It is 25 times slower than Laya here, partly because the fast linear-attention kernels
@@ -97,9 +102,9 @@ app/
   bootstrap.py              the app factory: CORS, the inbox screen's static files, /v1 behind the rate limit
   platform/                 resources (engines and Redis, built once), dependencies, errors (503 and 429),
                             rate_limit, redis
-  engines/                  Jev, Laya, the LLM letter-probability and embedding baselines behind sort_batch and
-                            decide_batch, the triage questions in the System One wire format, and the runner
-                            (finds the engine a request names, GPU engines take turns, times each call)
+  engines/                  Jev, Gemini Decision 1, Laya, the LLM letter-probability and embedding baselines behind
+                            sort_batch and decide_batch, the triage questions in the System One wire format, and the
+                            runner (finds the engine a request names, GPU engines take turns, times each call)
   features/
     sort/                   GET /v1/engines, POST /v1/sort: custom choices, the engine picked per request,
                             the confidence gate on each item
@@ -108,7 +113,7 @@ app/
 scripts/                    eval_triage.py, laya_quickstart.py (run from the repository root with PYTHONPATH=.)
 static/                     the inbox screen: index.html, inbox.js, inbox.css on app.css, inbox.json (the shift's 50
                             sample messages with invented senders and times)
-Dockerfile, docker-compose.yml, requirements-app.txt   the app on CPU in Docker, with Redis
+Dockerfile, docker-compose.yml, requirements-hosted.txt, requirements-app.txt   hosted slim image by default, or CPU Laya with INCLUDE_LOCAL_MODELS=true
 ```
 
 Each client address gets `RATE_LIMIT_PER_MINUTE` requests a minute on `/v1`, counted in Redis, then a 429 with
@@ -125,10 +130,11 @@ python scripts/eval_triage.py jev laya                   # any of: jev laya llm 
 python main.py                                           # TRIAGE_ENGINE in .env picks the engine
 ```
 
-`JEV_API_KEY` in the secrets file (read, never copied) turns Jev on next to the local engine, so `POST /v1/sort`
-can send `"engine": "jev"` or `"engine": "laya"`. Without the key, Jev is listed as "Needs key" and a Jev request
-gets a 503 that says so. A Jev error (bad key, rate limit, timeout) is a 503 that names Jev, never a quiet switch
-to Laya. `JEV_MODEL`, `JEV_TIMEOUT_SECONDS` and `JEV_MAX_CONCURRENT_REQUESTS` are settings.
+`JEV_API_KEY` and `GEMINI_API_KEY` (via `SECRETS_ENV_PATH` or the environment) turn Jev and Gemini Decision 1 on next to
+any local engine, so `POST /v1/sort` can send `"engine": "jev"`, `"engine": "gemini"`, or `"engine": "laya"`. Without
+a key, an engine is listed as unavailable ("Needs JEV_API_KEY" / "Needs GEMINI_API_KEY") and requests to it return a
+503 that says so. An API error (bad key, rate limit, timeout) returns a 503 naming that backend, never a quiet
+fallback. `DAILY_REQUESTS_PER_CALLER` and `DAILY_REQUESTS_TOTAL` enforce optional UTC daily caps via Redis or memory.
 
 Open http://localhost:8010. The screen loads the shift's 50 messages, triages them in one call, and lists what
 needs a person: "Escalate now" first, then "Needs a person", each in arrival order. Opening a message shows the
@@ -139,17 +145,17 @@ Assignments live in the page only: there is no case system behind it.
 On this laptop GPU the whole shift triages in 0.6 to 0.8 s and one message in 30 to 100 ms with Laya. The first
 request after about 20 seconds idle takes about 1 second while the GPU clocks back up.
 
-Docker (CPU, Laya engine):
+Docker (hosted Jev/Gemini slim image by default, or CPU Laya with `--build-arg INCLUDE_LOCAL_MODELS=true`):
 
 ```powershell
-docker compose up -d --build     # first start downloads the two Laya checkpoints into a named volume
+docker compose up -d --build
 ```
 
-The secrets file is mounted read-only for `HF_TOKEN`. The image runs as a non-root user. Measured in Docker
-Desktop on this laptop's CPU: 300 to 850 ms per message, 29 s for the shift's 50 messages on first load (the
-screen shows its loading state meanwhile), 3.5 GB of memory, image 2.0 GB. Laya's `predict_batch` takes
-`batch_size` and `sort_by_length`, which its README measured at 1.4 to 1.8 times faster on CPU (not tried here).
+For local CPU Laya in Docker, set `TRIAGE_ENGINE=laya` and build with `INCLUDE_LOCAL_MODELS=true` so the two Laya
+checkpoints download into the named volume. The image runs as a non-root user. Measured earlier on CPU Laya in Docker
+Desktop: 300 to 850 ms per message, 29 s for 50 messages on first load, 3.5 GB of memory, image 2.0 GB. The hosted
+slim image skips PyTorch and Hugging Face packages.
 
 ## Checks
 
-`ruff check . && ruff format --check . && mypy && pytest -q` (11 tests with fake engines, no GPU or network).
+`ruff check . && ruff format --check . && mypy && pytest -q` (16 tests with fake engines and mocked transports, no GPU or network).

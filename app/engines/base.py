@@ -1,8 +1,9 @@
 """What every engine provides, and the conversions from model answers to decisions that engines share."""
 
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
-import torch
+if TYPE_CHECKING:
+    import torch
 
 from app.engines.decisions import SortDecision, TriageDecision
 from app.engines.questions import DEPARTMENTS
@@ -22,7 +23,9 @@ class TriageEngine(Protocol):
     def sort_batch(self, items: list[str], instructions: str, criteria: dict[str, str]) -> list[SortDecision]: ...
 
 
-def model_dtype(device: str) -> torch.dtype:
+def model_dtype(device: str) -> "torch.dtype":
+    import torch  # heavy import, only when a local PyTorch engine runs
+
     if device == "cuda" and torch.cuda.is_bf16_supported():
         return torch.bfloat16
     return torch.float32
@@ -58,14 +61,16 @@ def decision_from_probabilities(
 
 
 def decision_from_answers(answers: dict[str, Any]) -> TriageDecision:
-    """Laya's and Jev's answers to TRIAGE_QUESTIONS."""
+    """Laya's, Jev's and Gemini's answers to TRIAGE_QUESTIONS."""
     department = answers["department"]
     urgency = answers["urgency"]
+    urgency_by_level = urgency["probabilities"]
     return TriageDecision(
         department=department["choice"],
         department_probabilities=department["probabilities"],
         urgency_score=urgency["score"],
-        urgency_probabilities=list(urgency["probabilities"].values()),
+        # Index order is explicit because hosted APIs may return string keys out of numerical order
+        urgency_probabilities=[float(urgency_by_level[str(index)]) for index in range(len(urgency_by_level))],
         complaint_probability=answers["complaint"]["noul"],
     )
 
