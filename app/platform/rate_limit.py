@@ -59,8 +59,5 @@ class InMemoryRateLimiter:
 
 
 def caller_of(request: Request) -> str:
-    """The API key when one is sent, otherwise the client address."""
-    api_key = request.headers.get("X-API-Key")
-    if api_key:
-        return f"key:{api_key[-8:]}"  # the key's end tells callers apart and keeps the full key out of Redis
+    """The client address. This service takes no API key, so a sent key must not start a fresh count."""
     return f"ip:{request.client.host if request.client else 'unknown'}"

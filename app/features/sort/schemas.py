@@ -1,5 +1,7 @@
 """The general sorter: any paragraphs, custom choices, a probability per choice and a confidence gate."""
 
+import base64
+import binascii
 from collections import Counter
 from typing import Annotated, Literal
 
@@ -37,10 +39,32 @@ class SortRequest(BaseModel):
         return self
 
 
+ImageMime = Literal["image/jpeg", "image/png", "image/webp"]
+
+
+def _starts_as(data: bytes, mime_type: ImageMime) -> bool:
+    if mime_type == "image/jpeg":
+        return data.startswith(b"\xff\xd8\xff")
+    if mime_type == "image/png":
+        return data.startswith(b"\x89PNG\r\n\x1a\n")
+    return data.startswith(b"RIFF") and data[8:12] == b"WEBP"
+
+
 class ImageItemInput(BaseModel):
     name: Annotated[str, Field(default="image", max_length=120)] = "image"
-    mime_type: Literal["image/jpeg", "image/png", "image/webp"] = "image/jpeg"
+    mime_type: ImageMime = "image/jpeg"
     data_base64: Annotated[str, Field(min_length=16, max_length=6_000_000)]
+
+    @model_validator(mode="after")
+    def _is_the_named_image(self) -> "ImageItemInput":
+        """A wrong file is the caller's mistake (422), not Gemini failing (503)."""
+        try:
+            data = base64.b64decode(self.data_base64, validate=True)
+        except binascii.Error as error:
+            raise ValueError(f"{self.name} is not base64.") from error
+        if not _starts_as(data, self.mime_type):
+            raise ValueError(f"{self.name} is not a {self.mime_type} picture.")
+        return self
 
 
 class SortImagesRequest(BaseModel):
