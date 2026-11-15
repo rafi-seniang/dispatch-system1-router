@@ -39,15 +39,14 @@ class SortRequest(BaseModel):
         return self
 
 
-ImageMime = Literal["image/jpeg", "image/png", "image/webp"]
+# JPEG and PNG are what both Jev and Gemini Decision read
+ImageMime = Literal["image/jpeg", "image/png"]
 
 
 def _starts_as(data: bytes, mime_type: ImageMime) -> bool:
     if mime_type == "image/jpeg":
         return data.startswith(b"\xff\xd8\xff")
-    if mime_type == "image/png":
-        return data.startswith(b"\x89PNG\r\n\x1a\n")
-    return data.startswith(b"RIFF") and data[8:12] == b"WEBP"
+    return data.startswith(b"\x89PNG\r\n\x1a\n")
 
 
 class ImageItemInput(BaseModel):
@@ -68,7 +67,7 @@ class ImageItemInput(BaseModel):
 
 
 class SortImagesRequest(BaseModel):
-    engine: EngineId = "gemini"
+    engine: EngineId = "jev"
     instructions: Annotated[str, Field(min_length=1, max_length=2000)]
     choices: Annotated[list[ChoiceOption], Field(min_length=2, max_length=10)]
     confidence_gate: Annotated[float, Field(default=0.7, ge=0.0, le=1.0)] = 0.7
