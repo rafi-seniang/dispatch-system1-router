@@ -15,6 +15,8 @@ from app.engines.jev import JevEngine
 from app.engines.questions import DEPARTMENTS, TRIAGE_QUESTIONS
 from config.settings import Settings
 
+TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
 
 class FakeSortEngine:
     name = "laya"
@@ -380,9 +382,7 @@ def test_gemini_engine_rotates_three_keys_on_429_and_sorts_images(monkeypatch: p
                 "instructions": "Classify scene",
                 "choices": [{"label": "A", "description": "outdoor"}, {"label": "B", "description": "indoor"}],
                 "confidence_gate": 0.7,
-                "images": [
-                    {"name": "photo1.jpg", "mime_type": "image/jpeg", "data_base64": "YWJjZGVmZ2hpamtsbW5vcA=="}
-                ],
+                "images": [{"name": "photo1.png", "mime_type": "image/png", "data_base64": TINY_PNG}],
             },
         )
         rejected = client.post(
@@ -391,14 +391,27 @@ def test_gemini_engine_rotates_three_keys_on_429_and_sorts_images(monkeypatch: p
                 "engine": "jev",
                 "instructions": "Classify scene",
                 "choices": [{"label": "A", "description": "outdoor"}, {"label": "B", "description": "indoor"}],
-                "images": [
-                    {"name": "photo1.jpg", "mime_type": "image/jpeg", "data_base64": "YWJjZGVmZ2hpamtsbW5vcA=="}
-                ],
+                "images": [{"name": "photo1.png", "mime_type": "image/png", "data_base64": TINY_PNG}],
             },
         )
 
     assert response.status_code == 200
     assert response.json()["results"][0]["choice"] == "A"
     assert seen_keys == ["key_one", "key_two"]
-    assert seen_inputs[1] == {"type": "image", "data": "YWJjZGVmZ2hpamtsbW5vcA==", "mime_type": "image/jpeg"}
+    assert seen_inputs[1] == {"type": "image", "data": TINY_PNG, "mime_type": "image/png"}
     assert rejected.status_code == 503
+
+
+def test_a_file_that_is_not_the_named_picture_is_refused_before_any_engine() -> None:
+    with TestClient(create_app(settings=make_settings(), engines={"jev": FakeJevEngine()})) as client:
+        body = {
+            "engine": "gemini",
+            "instructions": "Classify scene",
+            "choices": [{"label": "A"}, {"label": "B"}],
+            "images": [{"name": "notes.jpg", "mime_type": "image/jpeg", "data_base64": TINY_PNG}],
+        }
+        wrong_type = client.post("/v1/sort/images", json=body)
+        body["images"] = [{"name": "notes.jpg", "mime_type": "image/jpeg", "data_base64": "not base64 at all!!"}]
+        not_base64 = client.post("/v1/sort/images", json=body)
+    assert wrong_type.status_code == 422
+    assert not_base64.status_code == 422
