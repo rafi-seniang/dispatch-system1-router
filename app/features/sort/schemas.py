@@ -15,21 +15,44 @@ class ChoiceOption(BaseModel):
     description: Annotated[str, Field(default="", max_length=400)] = ""
 
 
+def _validate_unique_choices(choices: list[ChoiceOption]) -> None:
+    labels = [option.label for option in choices]
+    if any(not label.strip() for label in labels):
+        raise ValueError("Choice label cannot be blank.")
+    duplicates = [label for label, count in Counter(labels).items() if count > 1]
+    if duplicates:
+        raise ValueError(f"Duplicate choice label: {', '.join(duplicates)}")
+
+
 class SortRequest(BaseModel):
     engine: EngineId = "laya"
-    instructions: Annotated[str, Field(min_length=1, max_length=1000)]
+    instructions: Annotated[str, Field(min_length=1, max_length=2000)]
     choices: Annotated[list[ChoiceOption], Field(min_length=2, max_length=20)]
     confidence_gate: Annotated[float, Field(default=0.7, ge=0.0, le=1.0)] = 0.7
     items: Annotated[list[Annotated[str, Field(min_length=1, max_length=4000)]], Field(min_length=1, max_length=100)]
 
     @model_validator(mode="after")
     def _unique_choices(self) -> "SortRequest":
-        labels = [option.label for option in self.choices]
-        if any(not label.strip() for label in labels):
-            raise ValueError("Choice label cannot be blank.")
-        duplicates = [label for label, count in Counter(labels).items() if count > 1]
-        if duplicates:
-            raise ValueError(f"Duplicate choice label: {', '.join(duplicates)}")
+        _validate_unique_choices(self.choices)
+        return self
+
+
+class ImageItemInput(BaseModel):
+    name: Annotated[str, Field(default="image", max_length=120)] = "image"
+    mime_type: Literal["image/jpeg", "image/png", "image/webp"] = "image/jpeg"
+    data_base64: Annotated[str, Field(min_length=16, max_length=6_000_000)]
+
+
+class SortImagesRequest(BaseModel):
+    engine: EngineId = "gemini"
+    instructions: Annotated[str, Field(min_length=1, max_length=2000)]
+    choices: Annotated[list[ChoiceOption], Field(min_length=2, max_length=10)]
+    confidence_gate: Annotated[float, Field(default=0.7, ge=0.0, le=1.0)] = 0.7
+    images: Annotated[list[ImageItemInput], Field(min_length=1, max_length=10)]
+
+    @model_validator(mode="after")
+    def _unique_choices(self) -> "SortImagesRequest":
+        _validate_unique_choices(self.choices)
         return self
 
 

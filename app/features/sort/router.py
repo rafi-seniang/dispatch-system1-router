@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from app.features.sort.controller import SortController
 from app.features.sort.dependencies import get_sort_controller
-from app.features.sort.schemas import EnginesResponse, SortRequest, SortResponse
+from app.features.sort.schemas import EnginesResponse, SortImagesRequest, SortRequest, SortResponse
 
 router = APIRouter(tags=["sort"])
 Controller = Annotated[SortController, Depends(get_sort_controller)]
@@ -21,3 +21,8 @@ def list_engines(controller: Controller) -> EnginesResponse:
 @router.post("/sort")
 def sort_items(body: SortRequest, controller: Controller) -> SortResponse:
     return controller.sort(body)
+
+
+@router.post("/sort/images")
+def sort_images(body: SortImagesRequest, controller: Controller) -> SortResponse:
+    return controller.sort_images(body)
