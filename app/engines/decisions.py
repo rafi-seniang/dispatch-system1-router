@@ -1,6 +1,14 @@
 """What an engine answers: a triage decision for the hospital preset, or a sort decision for custom choices."""
 
+from dataclasses import dataclass
+
 from pydantic import BaseModel
+
+
+@dataclass(frozen=True)
+class ImageInputItem:
+    data_base64: str
+    mime_type: str
 
 
 class TriageDecision(BaseModel):

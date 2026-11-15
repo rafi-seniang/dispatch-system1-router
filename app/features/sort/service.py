@@ -1,6 +1,7 @@
 """The general sorter: which engines can sort, and any paragraphs sorted into custom choices by the one named."""
 
-from app.engines.decisions import SortDecision
+from app.engines.base import EngineUnavailable
+from app.engines.decisions import ImageInputItem, SortDecision
 from app.engines.runner import EngineRunner
 from app.features.sort.schemas import EngineId, EngineOption
 from config.settings import Settings
@@ -31,7 +32,7 @@ class SortService:
             else "Add JEV_API_KEY to enable Jev."
         )
         gemini_detail = (
-            f"{self._settings.gemini_decision_model} through Google Gemini API (v1beta)."
+            f"{self._settings.gemini_decision_model} through Google Gemini API (v1beta, text + images)."
             if "gemini" in engines
             else "Add GEMINI_API_KEY to enable Gemini Decision 1."
         )
@@ -67,4 +68,14 @@ class SortService:
     ) -> tuple[str, list[SortDecision], float]:
         engine = self._runner.engine(engine_id)
         decisions, latency_ms = self._runner.run(engine, lambda: engine.sort_batch(items, instructions, criteria))
+        return engine.name, decisions, latency_ms
+
+    def sort_images(
+        self, engine_id: EngineId, images: list[ImageInputItem], instructions: str, criteria: dict[str, str]
+    ) -> tuple[str, list[SortDecision], float]:
+        engine = self._runner.engine(engine_id)
+        sort_images_batch = getattr(engine, "sort_images_batch", None)
+        if sort_images_batch is None:
+            raise EngineUnavailable(f"{engine.name} only accepts text inputs. Choose gemini for images.")
+        decisions, latency_ms = self._runner.run(engine, lambda: sort_images_batch(images, instructions, criteria))
         return engine.name, decisions, latency_ms

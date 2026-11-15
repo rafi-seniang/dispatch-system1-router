@@ -25,7 +25,7 @@ def meta(resources: ResourcesDep) -> ServiceMeta:
     return ServiceMeta(
         id="dispatch",
         name="Dispatch",
-        summary="Routes any paragraph into custom choices with a System One decision model, no text generated.",
+        summary="Makes very fast, accurate decisions from messy text or images into custom prompt-defined choices.",
         version=VERSION,
         engine=resources.runner.triage_engine.name,
         own_ui_path="/",

@@ -239,6 +239,9 @@ def test_a_client_over_the_daily_cap_gets_429() -> None:
 
 def gemini_engine_against(handler: httpx.MockTransport, monkeypatch: pytest.MonkeyPatch) -> GeminiDecisionEngine:
     monkeypatch.setenv("GEMINI_API_KEY", "gemini_test_key")
+    monkeypatch.delenv("GEMINI_API_KEY_2", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY_3", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEYS", raising=False)
     http_client = httpx.Client(transport=handler)
     return GeminiDecisionEngine(make_settings(), http_client=http_client)
 
@@ -302,7 +305,8 @@ def test_gemini_engine_turns_an_api_error_into_engine_unavailable(monkeypatch: p
 
 
 def test_gemini_engine_refuses_to_start_without_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    for var in ("GEMINI_API_KEY", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3", "GEMINI_API_KEYS"):
+        monkeypatch.delenv(var, raising=False)
     with pytest.raises(SystemExit, match="GEMINI_API_KEY"):
         GeminiDecisionEngine(make_settings())
 
@@ -333,3 +337,68 @@ def test_sort_with_gemini_and_default_engine_reporting(monkeypatch: pytest.Monke
     assert response.status_code == 200
     assert response.json()["engine"] == "gemini"
     assert response.json()["results"][0]["checkpoint"] == "gemini-decision-1"
+
+
+def test_gemini_engine_rotates_three_keys_on_429_and_sorts_images(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "key_one")
+    monkeypatch.setenv("GEMINI_API_KEY_2", "key_two")
+    monkeypatch.setenv("GEMINI_API_KEY_3", "key_three")
+    monkeypatch.delenv("GEMINI_API_KEYS", raising=False)
+
+    seen_keys: list[str] = []
+    seen_inputs: list[object] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_keys.append(request.headers["x-goog-api-key"])
+        body = json.loads(request.content)
+        seen_inputs.append(body["input"])
+        if request.headers["x-goog-api-key"] == "key_one":
+            return httpx.Response(
+                429, json={"error": {"code": 429, "message": "quota", "status": "RESOURCE_EXHAUSTED"}}
+            )
+        return httpx.Response(
+            200,
+            json={
+                "answers": {
+                    "choice": {
+                        "type": "choice",
+                        "choice": "A",
+                        "confidence": 0.94,
+                        "probabilities": {"A": 0.94, "B": 0.06},
+                    }
+                }
+            },
+        )
+
+    engine = GeminiDecisionEngine(make_settings(), http_client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    with TestClient(create_app(settings=make_settings(), engines={"gemini": engine, "jev": FakeJevEngine()})) as client:
+        response = client.post(
+            "/v1/sort/images",
+            json={
+                "engine": "gemini",
+                "instructions": "Classify scene",
+                "choices": [{"label": "A", "description": "outdoor"}, {"label": "B", "description": "indoor"}],
+                "confidence_gate": 0.7,
+                "images": [
+                    {"name": "photo1.jpg", "mime_type": "image/jpeg", "data_base64": "YWJjZGVmZ2hpamtsbW5vcA=="}
+                ],
+            },
+        )
+        rejected = client.post(
+            "/v1/sort/images",
+            json={
+                "engine": "jev",
+                "instructions": "Classify scene",
+                "choices": [{"label": "A", "description": "outdoor"}, {"label": "B", "description": "indoor"}],
+                "images": [
+                    {"name": "photo1.jpg", "mime_type": "image/jpeg", "data_base64": "YWJjZGVmZ2hpamtsbW5vcA=="}
+                ],
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["choice"] == "A"
+    assert seen_keys == ["key_one", "key_two"]
+    assert seen_inputs[1] == {"type": "image", "data": "YWJjZGVmZ2hpamtsbW5vcA==", "mime_type": "image/jpeg"}
+    assert rejected.status_code == 503

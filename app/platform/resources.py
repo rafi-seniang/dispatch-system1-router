@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 
 from app.engines.base import TriageEngine
-from app.engines.gemini import GeminiDecisionEngine
+from app.engines.gemini import GeminiDecisionEngine, load_gemini_api_keys
 from app.engines.jev import JevEngine
 from app.engines.registry import ENGINE_CLASSES
 from app.engines.runner import EngineRunner
@@ -31,7 +31,7 @@ def load_engines(settings: Settings) -> dict[str, TriageEngine]:
     engines: dict[str, TriageEngine] = {primary.name: primary}
     if "jev" not in engines and os.environ.get("JEV_API_KEY", "").strip():
         engines["jev"] = JevEngine(settings)
-    if "gemini" not in engines and os.environ.get("GEMINI_API_KEY", "").strip():
+    if "gemini" not in engines and load_gemini_api_keys():
         engines["gemini"] = GeminiDecisionEngine(settings)
     return engines
 
