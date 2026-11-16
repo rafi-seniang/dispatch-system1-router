@@ -1,0 +1,77 @@
+# System One engines compared
+
+Five ways to get typed decisions without generating text (Jev, Gemini Decision 1, Laya, an LLM read through its
+log-probabilities, and an embedding baseline), tried on the same 50 labelled hospital messages (25 English and 25
+Indonesian). Jev and Laya were run on 25 Oct 2026 on an RTX 5050, Gemini Decision 1 was added on 15 Nov 2026. The
+deployed Dispatch offers Jev and Gemini Decision 1; the other engines remain in the code for comparison.
+
+## The landscape (checked 25 October 2026)
+
+| Name | What | Open | Notes |
+|---|---|---|---|
+| **Jev** (TypeSafe AI) | the model that named the category, launched 15 Sep 2026 | no, API only, early access | $0.042 per million input tokens, output free, 70 to 500 ms. Trained with "reinforcement learning for calibrated decisions" (RLCD). Up to 255 options per choice. An independent paper (arXiv 2609.37647) found it beat Qwen3.8-27B on 27 of 37 datasets. |
+| **OpenAI Decisions API** | same idea, `gpt-6-luna`, `POST /v1/decisions` | no, paid API | generally available 22 Oct 2026, $0.10 per million input tokens, up to 400 questions per request, accepts images |
+| **Laya** (Convai Innovations) | open answer to Jev: ModernBERT-large (421M, English) and mmBERT-base (322M, 100+ languages) with a decision head, a router picks the checkpoint by language | Apache 2.0, `pip install laya` | about 12 ms per message here. Its own README: "a fast base to specialise, not a zero-shot decision engine". Ships a fine-tuning recipe. |
+| **jevless, LocalJev, OpenJevPro, patelvishwa112/jev-system-one-rlcd** | any LLM with log-probabilities, read as a decision model: options get letters, one forward pass, softmax over the letter tokens | open code | the method used by `llm` engine here |
+| **OpenJev** | DiffusionGemma 26B-A4B (diffusion LLM) fills one masked slot per question in one pass, Jev-compatible API | open | needs a large GPU, free hosted tier on Codiv |
+| **djev** | Jev-compatible server that returns bit-identical probabilities for identical requests | open | Qwen3.5-9B LoRA on SGLang, one H100 |
+| **sys1bench** | benchmark harness for these models (calibration, wording sensitivity, negation, option count) | Apache 2.0 | found Jev better on choice and yes/no, both weak on scores, Laya weak on negation and many options |
+
+## The engines in this folder
+
+| Engine | How | Size on GPU |
+|---|---|---|
+| `jev` | TypeSafe's API: `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer $JEV_API_KEY`, model `jev-latest` (answered as `jev-1.14.0`). One text or one picture per request, up to 8 requests in flight. A picture goes as an asset (PNG or JPEG) that replaces a random placeholder in the state, with the `TypeSafe-Danger-Zone-Images: true` header | none, hosted |
+| `gemini` | Google's Decisions API (`v1beta`): `POST /v1beta/decisions` via `google-genai` with `GEMINI_API_KEY`, model `gemini-decision-1`. One text or one picture per request, up to 8 requests in flight. Up to three keys, the next on a 429 | none, hosted |
+| `laya` | `laya.Router`, English text to the ModernBERT checkpoint, other text to the mmBERT one | about 3 GB (the English and multilingual checkpoints) |
+| `llm` | Qwen3.5-2B (Apache 2.0). Each question becomes a lettered multiple-choice prompt, one forward pass, softmax over the letters A to E only | 3.5 GB in bf16 |
+| `embedding` | EmbeddingGemma 2, cosine similarity between the message and each option's description, softmax with temperature 0.02 | 1.2 GB (text only) |
+
+## Results (`eval_triage.py`, 25 English and 25 Indonesian messages)
+
+Routing rule (`questions.routing_action`): escalate when the department is emergency or expected urgency is at
+least 1.5, send to a person when the department probability is below 0.7, otherwise route automatically.
+
+| | Jev EN | Jev ID | Gemini EN | Gemini ID | Laya EN | Laya ID | Qwen3.5-2B EN | Qwen3.5-2B ID | Embedding EN | Embedding ID |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Department accuracy | **1.00** | **1.00** | **1.00** | **1.00** | 0.96 | 0.80 | **1.00** | 0.88 | 0.84 | 0.68 |
+| Complaint accuracy | **0.96** | **0.96** | **0.96** | 0.92 | **0.96** | **0.96** | **0.96** | 0.84 | 0.68 | 0.52 |
+| Urgency accuracy (rounded score) | **0.84** | **0.76** | 0.76 | 0.60 | 0.40 | 0.28 | 0.48 | 0.36 | 0.56 | 0.40 |
+| Emergencies escalated | **5 of 5** | **5 of 5** | **5 of 5** | **5 of 5** | 5 of 5 | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | 3 of 5 |
+| Routed automatically to the wrong team | **0** | **0** | **0** | **0** | 0 | 1 | 0 | 0 | 0 | 1 |
+| False alarms (non-emergency escalated, of 20) | **0** | **0** | **0** | **0** | 1 | 5 | 1 | 6 | 4 | 5 |
+| Milliseconds per message (3 questions) | 35 (8 in flight) | | 76 (8 in flight) | | 12 | | 286 | | 3 | |
+
+Gemini Decision 1 and Jev were run together on 15 November 2026 (`python scripts/eval_triage.py gemini jev`, results in
+`results/triage_eval_gemini_jev.csv`). The Laya column comes from `results/triage_eval_jev_laya.csv` (25 October 2026,
+where Jev scored 0.80 urgency accuracy, 1 false alarm in EN, and 46 ms per message). The Qwen and embedding columns
+come from the earlier run (`results/triage_eval_laya_llm_embedding.csv`). The Qwen weights are no longer on this laptop.
+
+What this shows, with only 50 messages (one message is 4 points of accuracy per language):
+
+- **Jev is still the best overall engine here.** It matched 100% department accuracy, raised 0 false alarms in the
+  November run, had the highest urgency accuracy (0.84 EN, 0.76 ID), and ran at 35 ms per message at 8-way concurrency.
+  The costs: it is a paid hosted API (about 435 input tokens per message for the three questions, $0.042 per million),
+  the text leaves the building, and a single request takes about half a second, so a batch needs parallel requests.
+- **Gemini Decision 1 matches Jev on department accuracy (1.00 EN, 1.00 ID) and safety.** All 5 emergencies in each
+  language escalated, with 0 wrong auto-routes and 0 false alarms, at 76 ms per message with 8 requests in flight. It
+  is weaker than Jev on urgency calibration (0.76 EN, 0.60 ID, tending to score routine messages higher near 0.6 to
+  0.9) and missed the double-QRIS billing complaint in Indonesian (`i03`). It exposes a free-tier option under Google
+  AI Studio alongside Jev.
+- **Qwen3.5-2B read as a decision model was the safest open option.** Every emergency escalated, nothing routed to the
+  wrong team, and every wrong department came with a probability under 0.7, so the confidence gate caught
+  them. It is 25 times slower than Laya here, partly because the fast linear-attention kernels
+  (`flash-linear-attention`, `causal-conv1d`) do not install on Windows and PyTorch fallbacks run instead.
+- **Laya is fast and very good at English and at the yes/no complaint question in both languages**, and it
+  passed all four negation traps ("Saya TIDAK butuh ambulans", "I'm not complaining"). On Indonesian it is
+  sometimes wrong with high confidence: a dentist cancellation was "emergency" at 0.99, waiting 3 hours at a
+  clinic "emergency" at 0.95, and a child who drank floor cleaner "medication" at 0.78, which the app would
+  have routed automatically. A confidence gate cannot catch an error made at 0.99.
+- **Urgency (the `score` question) was weak for every engine.** Laya's urgency rises with the true level
+  (mean 1.22, 1.36, 1.48 for routine, today, immediate) but is squeezed into 0.6 to 1.8, so it never says
+  "routine". Thresholds fitted on separate labelled data would help. sys1bench reports the same weakness.
+- **The embedding baseline is the fastest and the weakest.** Its probabilities come from a temperature I chose,
+  not from training, so they are not calibrated.
+
+Before using any of these on real messages: a few hundred labelled messages from the real inbox, the routing
+thresholds fitted on part of them and measured on the rest, and for Laya its fine-tuning recipe on that data.
