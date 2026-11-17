@@ -1,6 +1,6 @@
 # Dispatch: a fast decision router
 
-Sorts texts or pictures into choices you write in plain language, each with a calibrated probability. It uses decision
+Sorts texts or pictures into choices you write in plain language, with a probability for each choice. It uses decision
 models instead of a chat model. Part of the AI Lab (rafilab.com): it keeps the Lab contract (`/health`, `/meta`,
 OpenAPI) and has a screen in the lab frontend.
 
